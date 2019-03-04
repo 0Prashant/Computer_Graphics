@@ -7,15 +7,15 @@ PeasyCam camera;
 PImage img; 
 int rows = 512;
 int cols = 256;
+float zz;
 
 void setup()
 {
   fullScreen(P3D);
-  
   img = loadImage("../rsz_moon_low.jpg");
   img.loadPixels();
   terrain = new float[rows][cols];
-  
+ 
   for (int i=0; i<rows; i++)
   {
     for (int j=0; j< cols; j++)
@@ -30,15 +30,13 @@ void setup()
       print(terrain[i][j], " ");
     }
   }
-
-
+  
   camera = new PeasyCam(this, rows*zoom/2, cols*zoom/2, 100, 100);
   camera.setMaximumDistance(100000);
   camera.setMinimumDistance(0);
   camera.setSuppressRollRotationMode();
   terrain = convolute(rows, cols, terrain);
-  scale(20);
-   
+  scale(20); 
   noStroke();
   //System.arrayCopy(img.pixels, terrain);
 }
@@ -46,10 +44,15 @@ void setup()
 
 void draw()
 {
- background(0);
-  camera.pan(2,2);
+  background(0);
   ambientLight(172, 136, 111);
   directionalLight(50, 50, 50, 0, 0, -10);
+  translate(rows/2, cols/2,-1000);
+  //rotateX(PI/2);
+  //rotateZ(PI/2);
+  translate(-rows/2, -cols/2,0);
+  zz = zz+ 1;
+  
   for (int y=0; y< (cols - 1); y++)
   {
     beginShape(TRIANGLE_STRIP);
