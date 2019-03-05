@@ -7,10 +7,12 @@ PImage tex;
 int rows = 1024;
 int cols = 512;
 float zz,xx,yy;
-boolean start = true;
-boolean stop = false;
-float direction=0;
-int fardistance = 250;
+boolean start = false;
+boolean gofront, goback, goright, goleft; 
+float camera_direction=0;
+int camera_angle = 100;
+int fardistance = 200;
+int speed = 7;
 
 void setup()
 {
@@ -19,8 +21,7 @@ void setup()
   camera_setup();
   terrain = convolute(rows, cols, terrain); 
   lightening();
-  frameRate(60);
-  textureMode(IMAGE);
+  frameRate(30);
 }
 
 void draw()
@@ -34,7 +35,7 @@ void draw()
 void import_image()
 {
   img = loadImage("../moon_1low.jpg");
-  tex = loadImage("red.jpg");
+  tex = loadImage("../texture.jpg");
   img.loadPixels();
   terrain = new float[rows][cols];
   for (int i=0; i<rows; i++)
@@ -94,28 +95,32 @@ void initialize_orientation()
   translate(rows*zoom/2,-cols*zoom/2,-zoom*30);
 }
 
-void movex(int direction)
+void movex(float direction)
 {
-  if(!((xx > ((1024-fardistance-3)*zoom)) || (xx < (0))))
+  xx = xx + direction;
+  if(!((xx > ((1024-3)*zoom)) || (xx < (0))))
   {
-    xx = xx + direction;
-    translate(-xx,0,0);
+    translate((int)-xx,0,0);
   }
+  else
+    xx = xx - direction;
 }
-void movey(int direction)
+void movey(float direction)
 {
-  if(!((yy > ((512-fardistance-3)*zoom)) || (yy < (0))))
-  {
-    yy = yy + direction;
-    translate(0,yy,0);
+  yy = yy + direction;
+  if(!((yy > ((512-3)*zoom)) || (yy < -((512-3)*zoom))))
+  { 
+    translate(0,(int)-yy,0);
   }
+  else
+    yy = yy - direction;
 }
-void movez(int direction)
+void movez(float direction)
 {
   if(!((zz > (500)) || (zz < (-50))))
   {
     zz = zz + (direction);
-    translate(0,0,zz);
+    translate(0,0,(int)zz);
   }
   print(direction);
 }
@@ -123,15 +128,24 @@ void movez(int direction)
 void display (float row1, float col1, float row2, float col2)
 {
  // textureWrap(CLAMP);
-  texture(tex);
   for (int y=(int)col1; y< (col2 - 1); y++)
   {
     beginShape(QUAD_STRIP);
-    for (int x=(int)row1; x<row2; x++)
-    {    
+    texture(tex);
+    for (int x=(int)abs(row1); x<row2; x++)
+    {   
+      //vertex(x*zoom, y*zoom*2, map(terrain[x][y], 0, 255, 0, 50)*zoom);
+      //vertex(x*zoom, (y+1)*zoom*2, map(terrain[x][y+1], 0, 255, 0, 50)*zoom);
       //fill(terrain[x][y]);
-      vertex(x*zoom, y*zoom*2, map(terrain[x][y], 0, 255, 0, 50)*zoom,50,50);
-      vertex(x*zoom, (y+1)*zoom*2, map(terrain[x][y+1], 0, 255, 0, 50)*zoom,60,60);
+      for (int a=(int)(y*zoom); a<((y+1)*zoom*2); a++)
+      {
+        for (int b=(int)(x*zoom); b<((x+1)*zoom); b++)
+        {
+          float u = tex.width / row2 * x;
+          vertex(a, b, map(terrain[x][y], 0, 255, 0, 50)*zoom, u, (tex.height*(y+1)/(col2+1)));
+          vertex(a, b, map(terrain[x][y+1], 0, 255, 0, 50)*zoom, u, (tex.height*(y+1)/(col2+1)+1));
+        }
+      }
     }
     endShape();
   }
@@ -139,22 +153,98 @@ void display (float row1, float col1, float row2, float col2)
 
 void procedural_generation()
 {
-  if(start)
-    movex(5);
-  else
-    movex(-5);
+  move();
   display(xx/zoom,0,xx/zoom+fardistance,cols);
+}
 
+void move()
+{
+  camera_direction = -(map(mouseX, 0, width, -PI, PI));
+  float tempx = 0, tempy = 0;
+  if(start)
+  {
+    if(gofront)
+    {
+      tempx += cos(camera_direction)*speed;
+      tempy += sin(camera_direction)*speed;
+    }
+    else if(goback)
+    {
+      tempx -= cos(camera_direction)*speed;
+      tempy -= sin(camera_direction)*speed;
+    }
+    if(goright)
+    {
+      tempx -= sin(camera_direction)*speed;
+      tempy += cos(camera_direction)*speed;
+    }
+    else if(goleft)
+    {
+      tempx += sin(camera_direction)*speed;
+      tempy -= cos(camera_direction)*speed;
+    }
+  }
+    movex(tempx);
+    movey(tempy);
 }
 
 void keyPressed()
 {
-  if (key == '1' || key == '!')
+  start = true;
+  if (key == 'W' || key == 'w')
   {
-    start = true;
+    gofront = true;
   }
-  if (key == '2' || key == '@')
+  else if (key == 'S' || key == 's')
   {
+    goback = true;
+  }
+  if (key == 'A' || key == 'a')
+  {
+    goleft = true;
+  }
+  else if (key == 'D' || key == 'd')
+  {
+    goright = true;
+  }
+  if (key == 'P' || key == 'p')
+  { 
+    gofront = false;
+    goback = false;
+    goright = false;
+    goleft = false;
     start = false;
   }
+  
 }
+
+
+
+
+//void display (float row1, float col1, float row2, float col2)
+//{
+// // textureWrap(CLAMP);
+//  for (int y=(int)col1*zoom; y< (col2 - 1)*zoom; y++)
+//  {
+//    beginShape(QUAD_STRIP);
+//    //texture(tex);
+//    for (int x=(int)row1*zoom; x<row2*zoom; x++)
+//    {  
+//      fill(terrain[x/zoom][y/zoom]);
+//      float u = tex.width / row2 * x;
+//      vertex(x, y*2, map(terrain[x/zoom][y/zoom], 0, 255, 0, 50)*zoom);
+//      vertex(x, (y+1)*2, map(terrain[x/zoom][(y+1)/zoom], 0, 255, 0, 50)*zoom);
+      
+//      //for (int a=(int)(y*zoom); a<((y+1)*zoom*2); a++)
+//      //{
+//      //  for (int b=(int)(x*zoom); b<((x+1)*zoom); b++)
+//      //  {
+//      //    float u = tex.width / row2 * x;
+//      //    vertex(a, b, map(terrain[x][y], 0, 255, 0, 50)*zoom, u, (tex.height*(y+1)/(col2+1)));
+//      //    vertex(a, b, map(terrain[x][y+1], 0, 255, 0, 50)*zoom, u, (tex.height*(y+1)/(col2+1)+1));
+//      //  }
+//      //}
+//    }
+//    endShape();
+//  }
+//}
