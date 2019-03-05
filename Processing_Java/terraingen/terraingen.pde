@@ -7,16 +7,34 @@ PeasyCam camera;
 PImage img; 
 int rows = 1024;
 int cols = 512;
-float zz;
+float zz,xx,yy;
 boolean poptrue;
 
 void setup()
 {
   fullScreen(P3D);
+  import_image();
+  camera_setup();
+  terrain = convolute(rows, cols, terrain); 
+  lightening();
+  frameRate(10);
+}
+
+
+
+void draw()
+{
+   background(0);
+  initialize_orientation();
+  movex(-40);
+  display();
+}
+
+void import_image()
+{
   img = loadImage("../moon_1low.jpg");
   img.loadPixels();
   terrain = new float[rows][cols];
- 
   for (int i=0; i<rows; i++)
   {
     for (int j=0; j< cols; j++)
@@ -31,51 +49,23 @@ void setup()
       print(terrain[i][j], " ");
     }
   }
-  
+}
+
+void camera_setup()
+{
   camera = new PeasyCam(this, rows*zoom/2, cols*zoom/2, 100, 100);
   camera.setMaximumDistance(100000);
   camera.setMinimumDistance(0);
   camera.setSuppressRollRotationMode();
-  terrain = convolute(rows, cols, terrain); 
+}
+
+void lightening()
+{
   noStroke();
   ambientLight(172, 136, 111);
   directionalLight(50, 50, 50, 0, 0, -10);
-  
-  frameRate(5);
 }
 
-
-void draw()
-{
-   background(0);
-   //if(poptrue)
-   //{
-   //  popMatrix();
-   //  poptrue = false;
-   //}
-  translate(rows*zoom/2, cols*zoom/2,0);
-  //translate(0,0,-1000);
-  rotateX(PI/2);
-  rotateZ(-PI/2);
-  translate(-rows*zoom/2, -cols*zoom/2,0);
-  translate(rows*zoom/2,-cols*zoom/2,-zoom*100);
-  //translate(0,0,-zoom*100);
-  translate(zz,0,0);
-  zz = zz-40;
-  
-  for (int y=0; y< (cols - 1); y++)
-  {
-    beginShape(TRIANGLE_STRIP);
-    for (int x=0; x<rows; x++)
-    {
-      fill(terrain[x][y]/2);
-      vertex(x*zoom, y*zoom*2, map(terrain[x][y], 0, 255, 0, 50)*zoom/2);
-      vertex(x*zoom, (y+1)*zoom*2, map(terrain[x][y+1], 0, 255, 0, 50)*zoom/2);
-    }
-    endShape();
-  }
-  
-}
 
 float[][] convolute(int rows, int cols, float[][] array)
 {
@@ -89,4 +79,55 @@ float[][] convolute(int rows, int cols, float[][] array)
     }
   }
   return new_matrix;
+}
+
+void initialize_orientation()
+{  
+  translate(rows*zoom/2, cols*zoom/2,0);
+  //translate(0,0,-1000);
+  rotateX(PI/2);
+  rotateZ(-PI/2);
+  translate(-rows*zoom/2, -cols*zoom/2,0);
+  translate(rows*zoom/2,-cols*zoom/2,-zoom*100);
+}
+
+void movex(int direction)
+{
+  translate(xx+direction,0,0);
+  if(!((xx > (10000)) || (xx < (-10000))))
+  {
+    xx = xx + direction;
+  }
+}
+void movey(int direction)
+{
+  translate(0,yy+direction,0);
+  if(!((yy > (10000)) || (yy < (-10000))))
+  {
+    yy = yy + direction;
+  }
+}
+void movez(int direction)
+{
+  translate(0,0,zz+(direction));
+  if(!((zz > (500)) || (zz < (-500))))
+  {
+    zz = zz + (direction);
+  }
+  print(direction);
+}
+
+void display ()
+{
+    for (int y=0; y< (cols - 1); y++)
+  {
+    beginShape(TRIANGLE_STRIP);
+    for (int x=0; x<rows; x++)
+    {
+      fill(terrain[x][y]/2);
+      vertex(x*zoom, y*zoom*2, map(terrain[x][y], 0, 255, 0, 50)*zoom/2);
+      vertex(x*zoom, (y+1)*zoom*2, map(terrain[x][y+1], 0, 255, 0, 50)*zoom/2);
+    }
+    endShape();
+  }
 }
