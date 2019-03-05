@@ -6,7 +6,7 @@ PImage img;
 int rows = 1024;
 int cols = 512;
 float zz,xx,yy;
-boolean start = false;
+boolean start = true;
 boolean stop = false;
 float direction=0;
 
@@ -24,14 +24,8 @@ void draw()
 {
   initialize_orientation();
   background(0);
-  if(start)
-  {
-    movex(-4);
-  }
-  else{
-    movex(0);
-  }
-  display(xx/zoom,0,xx/zoom+100,cols);
+  translate(-200,0,0);
+  procedural_generation();
 }
 
 void import_image()
@@ -98,26 +92,26 @@ void initialize_orientation()
 
 void movex(int direction)
 {
-  translate(xx+direction,0,0);
-  if(!((xx > (10000)) || (xx < (-10000))))
+  if(!((xx > (1020)) || (xx < (0))))
   {
-    xx = xx - direction;
+    xx = xx + direction;
+    translate(-xx,0,0);
   }
 }
 void movey(int direction)
 {
-  translate(0,yy+direction,0);
-  if(!((yy > (10000)) || (yy < (-10000))))
+  if(!((yy > (512)) || (yy < (0))))
   {
-    yy = yy - direction;
+    yy = yy + direction;
+    translate(0,yy,0);
   }
 }
 void movez(int direction)
 {
-  translate(0,0,zz+(direction));
-  if(!((zz > (500)) || (zz < (-500))))
+  if(!((zz > (500)) || (zz < (-50))))
   {
-    zz = zz - (direction);
+    zz = zz + (direction);
+    translate(0,0,zz);
   }
   print(direction);
 }
@@ -139,6 +133,15 @@ void display (float row1, float col1, float row2, float col2)
 
 void procedural_generation()
 {
+  if(start)
+  {
+    movex(4);
+  }
+  else
+  {
+    movex(-4);
+  }
+  display(xx/zoom,0,xx/zoom+100,cols);
 }
 
 void keyPressed()
