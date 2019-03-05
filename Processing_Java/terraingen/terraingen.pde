@@ -3,12 +3,14 @@ float zoom = 10;
 float[][] terrain;
 PeasyCam camera;
 PImage img;
+PImage texture;
 int rows = 1024;
 int cols = 512;
 float zz,xx,yy;
 boolean start = true;
 boolean stop = false;
 float direction=0;
+int fardistance = 250;
 
 void setup()
 {
@@ -17,7 +19,7 @@ void setup()
   camera_setup();
   terrain = convolute(rows, cols, terrain); 
   lightening();
-  frameRate(10);
+  frameRate(60);
 }
 
 void draw()
@@ -31,6 +33,7 @@ void draw()
 void import_image()
 {
   img = loadImage("../moon_1low.jpg");
+  texture = loadImage("texture.jpg");
   img.loadPixels();
   terrain = new float[rows][cols];
   for (int i=0; i<rows; i++)
@@ -84,15 +87,17 @@ void initialize_orientation()
 {  
   translate(rows*zoom/2, cols*zoom/2,0);
   //translate(0,0,-1000);
-  rotateX(PI/3);
+  //rotateX(map(mouseY, 0, height, -PI, PI));
+  rotateX(PI/2.5);
   rotateZ(-PI/2);
+   rotateZ(map(mouseX, 0, width, -PI, PI));
   translate(-rows*zoom/2, -cols*zoom/2,0);
-  translate(rows*zoom/2,-cols*zoom/2,-zoom*50);
+  translate(rows*zoom/2,-cols*zoom/2,-zoom*30);
 }
 
 void movex(int direction)
 {
-  if(!((xx > (1020)) || (xx < (0))))
+  if(!((xx > ((1024-fardistance-3)*zoom)) || (xx < (0))))
   {
     xx = xx + direction;
     translate(-xx,0,0);
@@ -100,7 +105,7 @@ void movex(int direction)
 }
 void movey(int direction)
 {
-  if(!((yy > (512)) || (yy < (0))))
+  if(!((yy > ((512-fardistance-3)*zoom)) || (yy < (0))))
   {
     yy = yy + direction;
     translate(0,yy,0);
@@ -124,6 +129,7 @@ void display (float row1, float col1, float row2, float col2)
     for (int x=(int)row1; x<row2; x++)
     {
       fill(terrain[x][y]);
+      texture(texture);
       vertex(x*zoom, y*zoom*2, map(terrain[x][y], 0, 255, 0, 50)*zoom);
       vertex(x*zoom, (y+1)*zoom*2, map(terrain[x][y+1], 0, 255, 0, 50)*zoom);
     }
@@ -134,14 +140,11 @@ void display (float row1, float col1, float row2, float col2)
 void procedural_generation()
 {
   if(start)
-  {
-    movex(4);
-  }
+    movex(5);
   else
-  {
-    movex(-4);
-  }
-  display(xx/zoom,0,xx/zoom+100,cols);
+    movex(-5);
+  display(xx/zoom,0,xx/zoom+fardistance,cols);
+
 }
 
 void keyPressed()
