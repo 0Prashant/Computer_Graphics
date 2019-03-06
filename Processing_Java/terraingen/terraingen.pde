@@ -1,5 +1,5 @@
 import peasy.*;
-int zoom = 9;
+int zoom = 15;
 float[][] terrain;
 float [][] noise;
 PeasyCam camera;
@@ -14,7 +14,7 @@ float camera_direction=0;
 int camera_angle = 100;
 int fardistance = 200;
 int speed = 7;
-float depth= 3;
+float depth= 5;
 
 void setup()
 {
@@ -133,6 +133,7 @@ void movez(float direction)
   print(direction);
 }
 
+
 void display (float row1, float col1, float row2, float col2)
 {
  // textureWrap(CLAMP);
@@ -144,9 +145,9 @@ void display (float row1, float col1, float row2, float col2)
     {   
       fill(terrain[(int)x/zoom][(int)y/zoom]);
      // noise(x,y);
-      vertex(x, y*2, (map(terrain[(int)x/zoom][(int)y/zoom], 0, 255, 0, 50)+random(-0.1,0.1))*zoom);
+      vertex(x, y*2, (map(terrain[(int)x/zoom][(int)y/zoom], 0, 255, 0, 50)+noise(-10,10))*zoom);
       //vertex(x*zoom, (y+0.5)*zoom*2, map((terrain[(int)x][(int)y]+terrain[(int)x][(int)y+1])/2, 0, 255, 0, 50)*zoom);
-      vertex(x, (y+depth)*2, (map(terrain[(int)x/zoom][(int)(y+depth)/zoom], 0, 255, 0, 50)+random(-0.1,0.1))*zoom);
+      vertex(x, (y+depth)*2, (map(terrain[(int)x/zoom][(int)(y+depth)/zoom], 0, 255, 0, 50)+noise(-10,10))*zoom);
       
       //fill(terrain[x][y]);
       //vertex((x+0.5)*zoom, y*zoom*2, map((terrain[x][y]+terrain[x+1][y])/2, 0, 255, 0, 50)*zoom);
@@ -169,6 +170,35 @@ void display (float row1, float col1, float row2, float col2)
     y+=depth;
   }
 }
+
+
+//void display (float row1, float col1, float row2, float col2)
+//{
+// // textureWrap(CLAMP);
+//  for (int y=(int)col1; y< (col2 - 1); y++)
+//  {
+//    beginShape(TRIANGLE_STRIP);
+//    //texture(tex);
+//    for (int x=(int)row1; x<row2; x++)
+//    {  
+//      fill(terrain[x][y]);
+      
+//      vertex(x*zoom, y*zoom*2, map(terrain[x][y], 0, 255, 0, 50)*zoom);
+//      vertex(x*zoom, (y+1)*zoom*2, map(terrain[x][(y+1)], 0, 255, 0, 50)*zoom);
+      
+//      //for (int a=(int)(y*zoom); a<((y+1)*zoom*2); a++)
+//      //{
+//      //  for (int b=(int)(x*zoom); b<((x+1)*zoom); b++)
+//      //  {
+//      //    float u = tex.width / row2 * x;
+//      //    vertex(a, b, map(terrain[x][y], 0, 255, 0, 50)*zoom, u, (tex.height*(y+1)/(col2+1)));
+//      //    vertex(a, b, map(terrain[x][y+1], 0, 255, 0, 50)*zoom, u, (tex.height*(y+1)/(col2+1)+1));
+//      //  }
+//      //}
+//    }
+//    endShape();
+//  }
+//}
 
 void noise_(float x, float y)
 {
@@ -272,3 +302,42 @@ void keyPressed()
 //    endShape();
 //  }
 //}
+
+
+/*
+void display (float row1, float col1, float row2, float col2)
+{
+ // textureWrap(CLAMP);
+  for (float y=col1*zoom; y< (col2 - 1)*zoom; )
+  {
+    beginShape(TRIANGLE_STRIP);
+    //texture(tex);
+    for (float x=abs(row1*zoom); x<row2*zoom;)
+    {   
+      fill(terrain[(int)x/zoom][(int)y/zoom]);
+     // noise(x,y);
+      vertex(x, y*2, (map(terrain[(int)x/zoom][(int)y/zoom], 0, 255, 0, 50)+noise(-10,10))*zoom);
+      //vertex(x*zoom, (y+0.5)*zoom*2, map((terrain[(int)x][(int)y]+terrain[(int)x][(int)y+1])/2, 0, 255, 0, 50)*zoom);
+      vertex(x, (y+depth)*2, (map(terrain[(int)x/zoom][(int)(y+depth)/zoom], 0, 255, 0, 50)+noise(-10,10))*zoom);
+      
+      //fill(terrain[x][y]);
+      //vertex((x+0.5)*zoom, y*zoom*2, map((terrain[x][y]+terrain[x+1][y])/2, 0, 255, 0, 50)*zoom);
+      //vertex((x+0.5)*zoom, (y+0.5)*zoom*2, map((terrain[x][y]+terrain[x][y+1]+terrain[x+1][y]+terrain[x+1][y+1])/4, 0, 255, 0, 50)*zoom);
+      //vertex((x+0.5)*zoom, (y+1)*zoom*2, map((terrain[x][y+1]+terrain[x+1][y+1])/2, 0, 255, 0, 50)*zoom);
+      
+      //for (int b=(int)(y*zoom*2); b<((y+1)*zoom*2);)
+      //{
+      //  b+=5;
+      //  for (int a=(int)(x*zoom); a<((x+1)*zoom);)
+      //  {
+      //    a+=5;
+      //    vertex(a, b, map(terrain[x][y], 0, 255, 0, 50)*zoom);
+      //    vertex(a, b, map(terrain[x][y+1], 0, 255, 0, 50)*zoom);
+      //  }
+      //}  
+      x+=depth;
+    }
+    endShape();
+    y+=depth;
+  }
+}*/
