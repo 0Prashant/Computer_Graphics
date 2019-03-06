@@ -14,7 +14,7 @@ float camera_direction=0;
 int camera_angle = 100;
 int fardistance = 200;
 int speed = 3;
-float depth= zoom;
+float depth= zoom/3;
 float tempx = 0, tempy = 0;
 
 void setup()
@@ -22,9 +22,34 @@ void setup()
   fullScreen(P3D);
   import_image();
   camera_setup();
-  terrain = convolute(rows*zoom, cols*zoom, terrain); 
+  terrain = convolute4(rows*zoom, cols*zoom, terrain); 
   terrain = expand_terrain(terrain);
-  //noise_setup();
+  terrain = noise_setup(terrain);
+  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
+  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
+  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
+  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
+  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
+  terrain = convolute9(rows*zoom, cols*zoom, terrain);
+  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
+  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
+  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
+  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
+  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
+  terrain = convolute9(rows*zoom, cols*zoom, terrain);
+  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
+  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
+  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
+  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
+  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
+  terrain = convolute9(rows*zoom, cols*zoom, terrain);
+  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
+  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
+  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
+  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
+  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
+  terrain = convolute9(rows*zoom, cols*zoom, terrain);
+  smooth(4);
   lightening();
   frameRate(60);
 }
@@ -76,7 +101,7 @@ void lightening()
 }
 
 
-float[][] convolute(int rows, int cols, float[][] array)
+float[][] convolute4(int rows, int cols, float[][] array)
 {
   float[][] new_matrix = new float[rows][cols];
   
@@ -89,7 +114,19 @@ float[][] convolute(int rows, int cols, float[][] array)
   }
   return new_matrix;
 }
-
+float[][] convolute9(int rows, int cols, float[][] array)
+{
+  float[][] new_matrix = new float[rows][cols];
+  
+  for(int i = (1); i < (rows-2); i++)
+  {
+    for (int j = (1); j < (cols-2); j++)
+    {
+      new_matrix[i][j] = (array[i][j]+array[i+1][j]+array[i][j+1]+array[i+1][j+1]+array[i-1][j]+array[i][j-1]+array[i-1][j-1]+array[i-1][j+1]+array[i+1][j-1])/(9);
+    }
+  }
+  return new_matrix;
+}
 float[][] expand_terrain(float[][] array)
 {
   float[][] new_matrix = new float[rows*zoom][cols*zoom];
@@ -103,9 +140,24 @@ float[][] expand_terrain(float[][] array)
   return new_matrix;
 }
 
-void noise_setup()
+float[][] noise_setup(float[][] array)
 {
-  noise = new float[zoom][zoom];
+  float[][] new_matrix = new float[rows*zoom][cols*zoom];
+  for (int j = (0); j < (cols*zoom); j++)
+  {
+    for(int i = (0); i < (rows*zoom); i++)
+    {
+      new_matrix[i][j] = array[((int)(i/zoom))*zoom][((int)(j/zoom))*zoom];
+    }
+  } 
+  for (int j = (0); j < (cols*zoom); j++)
+  {
+    for(int i = (0); i < (rows*zoom); i++)
+    {
+      new_matrix[i][j] += map(noise(i,j,new_matrix[i][j]),0,1,-50,50);
+    }
+  }
+  return new_matrix;
 }
 
 void initialize_orientation()
@@ -153,10 +205,13 @@ void display (float row1, float col1, float row2, float col2)
   {
     beginShape(TRIANGLE_STRIP);
     for (float x=row1; x<row2; x+=depth)
-    {  
+    { 
       fill(terrain[(int)x][(int)y]);
-      vertex(x, y*2, map(terrain[(int)x][(int)y], 0, 255, 0, 50)*zoom);
-      vertex(x, (y+depth)*2, map(terrain[(int)x][(int)(y+depth)], 0, 255, 0, 50)*zoom);
+      //vertex(x, y*2, (map(terrain[(int)x][(int)y], 0, 255, 0, 50)+noise)*zoom);
+      //vertex(x, (y+depth)*2, (map(terrain[(int)x][(int)(y+depth)], 0, 255, 0, 50)+noise)*zoom);
+      
+      vertex(x, y*2, (terrain[(int)x][(int)y])*zoom/4);
+      vertex(x, (y+depth)*2, (terrain[(int)x][(int)(y+depth)])*zoom/4);
     }
     endShape();
   }
@@ -166,8 +221,6 @@ void display (float row1, float col1, float row2, float col2)
 void procedural_generation()
 {
   move();
-  //movex(speed);
-  //movey(speed);
   display(xx*zoom,0,(xx+fardistance)*zoom,cols*zoom);
 }
 
@@ -176,26 +229,6 @@ void move()
   camera_direction = -(map(mouseX, 0, width, -PI, PI));
   if(start)
   {
-    //if(gofront)
-    //{
-    //  tempx += speed;
-    //  tempy += speed;
-    //}
-    //else if(goback)
-    //{
-    //  tempx -= speed;
-    //  tempy -= speed;
-    //}
-    //if(goright)
-    //{
-    //  tempx -= speed;
-    //  tempy += speed;
-    //}
-    //else if(goleft)
-    //{
-    //  tempx += speed;
-    //  tempy -= speed;
-    //}
     tempx = 0;
     tempy = 0;
     if(gofront)
@@ -335,3 +368,19 @@ void display (float row1, float col1, float row2, float col2)
     y+=depth;
   }
 }*/
+
+
+//void display (float row1, float col1, float row2, float col2)
+//{
+//  for (float y=col1; y< (col2 - zoom); y+=depth)
+//  {
+//    beginShape(TRIANGLE_STRIP);
+//    for (float x=row1; x<row2; x+=depth)
+//    {  
+//      fill(terrain[(int)x][(int)y]);
+//      vertex(x, y*2, map(terrain[(int)x][(int)y], 0, 255, 0, 50)*zoom);
+//      vertex(x, (y+depth)*2, map(terrain[(int)x][(int)(y+depth)], 0, 255, 0, 50)*zoom);
+//    }
+//    endShape();
+//  }
+//}
