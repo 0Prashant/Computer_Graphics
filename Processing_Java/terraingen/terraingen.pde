@@ -13,8 +13,8 @@ boolean gofront, goback, goright, goleft;
 float camera_direction=0;
 int camera_angle = 100;
 int fardistance = 200;
-int speed = 5;
-float depth= 5;
+int speed = 3;
+float depth= zoom;
 float tempx = 0, tempy = 0;
 
 void setup()
@@ -23,6 +23,7 @@ void setup()
   import_image();
   camera_setup();
   terrain = convolute(rows*zoom, cols*zoom, terrain); 
+  terrain = expand_terrain(terrain);
   //noise_setup();
   lightening();
   frameRate(60);
@@ -52,8 +53,7 @@ void import_image()
       int g = (rgb >> 8) & 0xFF;
       int b = (rgb) & 0xFF;
 
-      terrain[i*zoom][j*zoom] = (r+g+b)/(3);
-      print(terrain[i][j], " ");
+      terrain[i][j] = (r+g+b)/(3);
     }
   }
 }
@@ -87,6 +87,19 @@ float[][] convolute(int rows, int cols, float[][] array)
       new_matrix[i][j] = (array[i][j]+array[i+1][j]+array[i][j+1]+array[i+1][j+1])/(4);
     }
   }
+  return new_matrix;
+}
+
+float[][] expand_terrain(float[][] array)
+{
+  float[][] new_matrix = new float[rows*zoom][cols*zoom];
+  for (int j = (0); j < (cols); j++)
+  {
+    for(int i = (0); i < (rows); i++)
+    {
+      new_matrix[i*zoom][j*zoom] = array[i][j];
+    }
+  }  
   return new_matrix;
 }
 
@@ -136,14 +149,14 @@ void movez(float direction)
 
 void display (float row1, float col1, float row2, float col2)
 {
-  for (float y=col1; y< (col2 - zoom); y+=zoom)
+  for (float y=col1; y< (col2 - zoom); y+=depth)
   {
     beginShape(TRIANGLE_STRIP);
-    for (float x=row1; x<row2; x+=zoom)
+    for (float x=row1; x<row2; x+=depth)
     {  
       fill(terrain[(int)x][(int)y]);
-      vertex(x, y*2, map(terrain[(int)x][(int)y], 0, 255, 0, 100)*zoom);
-      vertex(x, (y+zoom)*2, map(terrain[(int)x][(int)y+zoom], 0, 255, 0, 100)*zoom);
+      vertex(x, y*2, map(terrain[(int)x][(int)y], 0, 255, 0, 50)*zoom);
+      vertex(x, (y+depth)*2, map(terrain[(int)x][(int)(y+depth)], 0, 255, 0, 50)*zoom);
     }
     endShape();
   }
