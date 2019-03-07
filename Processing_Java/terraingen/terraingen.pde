@@ -1,5 +1,5 @@
 import peasy.*;
-int zoom = 15;
+int zoom = 8;
 float[][] terrain;
 float [][] noise;
 PeasyCam camera;
@@ -14,7 +14,7 @@ float camera_direction=0;
 int camera_angle = 100;
 int fardistance = 200;
 int speed = 3;
-float depth= zoom/3;
+float depth= zoom/4;
 float tempx = 0, tempy = 0;
 
 void setup()
@@ -221,7 +221,7 @@ void display (float row1, float col1, float row2, float col2)
 void procedural_generation()
 {
   move();
-  display(xx*zoom,0,(xx+fardistance)*zoom,cols*zoom);
+  display(xx*zoom,cols*zoom*0.25,(xx+fardistance)*zoom,cols*zoom*0.75);
 }
 
 void move()
@@ -287,6 +287,12 @@ void keyPressed()
     goback = false;
     goleft = false;
   }
+  else if (key == '7' || key == '&')
+    depth = zoom/1;
+  else if (key == '8' || key == '*')
+    depth = zoom/2;
+  else if (key == '9' || key == '(')
+    depth = zoom/4;
   if (key == 'P' || key == 'p')
   { 
     gofront = false;
