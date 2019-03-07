@@ -1,5 +1,5 @@
 import peasy.*;
-int zoom = 8;
+int zoom = 15;
 float[][] terrain;
 float [][] noise;
 PeasyCam camera;
@@ -13,8 +13,8 @@ boolean gofront, goback, goright, goleft;
 float camera_direction=0;
 int camera_angle = 100;
 int fardistance = 200;
-int speed = 3;
-float depth= zoom/4;
+int speed = 10;
+float depth= zoom/3;
 float tempx = 0, tempy = 0;
 
 void setup()
@@ -29,18 +29,9 @@ void setup()
   terrain = convolute9(rows*zoom, cols*zoom, terrain); 
   terrain = convolute9(rows*zoom, cols*zoom, terrain); 
   terrain = convolute9(rows*zoom, cols*zoom, terrain); 
-  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
-  terrain = convolute9(rows*zoom, cols*zoom, terrain);
-  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
-  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
-  terrain = convolute9(rows*zoom, cols*zoom, terrain);
-  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
-  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
-  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
-  terrain = convolute9(rows*zoom, cols*zoom, terrain);
-  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
-  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
-  terrain = convolute9(rows*zoom, cols*zoom, terrain);
+  //terrain = convolute9(rows*zoom, cols*zoom, terrain); 
+  //terrain = convolute9(rows*zoom, cols*zoom, terrain);
+  //terrain = convolute9(rows*zoom, cols*zoom, terrain); 
   smooth(4);
   lightening();
   frameRate(60);
@@ -88,8 +79,8 @@ void lightening()
   //pointLight(50, 50, 50, 0, 0, -10);
   noStroke();
   //lights();
-  ambientLight(172, 136, 111);
-  directionalLight(50, 50, 50, 0, 0, -10);
+  //ambientLight(17, 13, 11);
+ // directionalLight(50, 50, 50, 0, 0, -10);
 }
 
 
@@ -147,6 +138,8 @@ float[][] noise_setup(float[][] array)
     for(int i = (0); i < (rows*zoom); i++)
     {
       new_matrix[i][j] += map(noise(i,j,new_matrix[i][j]),0,1,-40,40);
+      new_matrix[i][j] += map(noise(i,j,new_matrix[i][j]),0,1,-10,10);
+      new_matrix[i][j] += map(noise(i,j,new_matrix[i][j]),0,1,-4,4);
     }
   }
   return new_matrix;
@@ -159,13 +152,14 @@ void initialize_orientation()
   rotateZ(-PI/2);
   rotateZ(-camera_direction);
   translate(-rows*zoom/2, -cols*zoom/2,0);
-  translate(rows*zoom/2,-cols*zoom/2,-zoom*30);
+  translate(rows*zoom/2,-cols*zoom/2,-zoom*40);
 }
 
 void movex(float direction)
 {
   xx = xx + direction;
-  if(!((xx > ((1024-3)*zoom)) || (xx < (0))))
+  //if(!((xx > ((1024-3)*zoom)) || (xx < (0))))
+  if(true)
   {
     translate((int)-xx*zoom,0,0);
   }
@@ -175,7 +169,8 @@ void movex(float direction)
 void movey(float direction)
 {
   yy = yy + direction;
-  if(!((yy > ((512-3)*zoom)) || (yy < -((512-3)*zoom))))
+  //if(!((yy > ((512-3)*zoom)) || (yy < -((512-3)*zoom))))
+  if(true)
   { 
     translate(0,(int)-yy*zoom,0);
   }
@@ -193,36 +188,25 @@ void movez(float direction)
 
 void display (float row1, float col1, float row2, float col2)
 {
+  float u = 0, v = 0;
+  
   for (float y=col1; y< (col2 - zoom); y+=depth)
   {
     beginShape(TRIANGLE_STRIP);
+    texture(tex);
     for (float x=row1; x<row2; x+=depth)
     { 
-      fill(terrain[(int)x][(int)y]);
+      //fill(terrain[(int)x][(int)y]);
+      u = tex.width*x / row2 ;
+      v = 2*tex.height*(y+1)/(col2+1);
       //vertex(x, y*2, (map(terrain[(int)x][(int)y], 0, 255, 0, 50)+noise)*zoom);
       //vertex(x, (y+depth)*2, (map(terrain[(int)x][(int)(y+depth)], 0, 255, 0, 50)+noise)*zoom);
       
-      vertex(x, y*2, (terrain[(int)x][(int)y])*zoom/6);
-      vertex(x, (y+depth)*2, (terrain[(int)x][(int)(y+depth)])*zoom/6);
+      vertex(x, y*2, (terrain[(int)x][(int)y])*zoom/6, u, v);
+      vertex(x, (y+depth)*2, (terrain[(int)x][(int)(y+depth)])*zoom/6, u, v+depth);
     }
     endShape();
   }
-  //   float u = 0, v = 0;
-  //for (float y=col1; y< (col2 - zoom); y+=depth)
-  //{
-  //  beginShape(TRIANGLE_STRIP);
-  //  texture(tex);
-  //  for (float x=row1; x<row2; x+=depth)
-  //  { 
-  //    //fill(terrain[(int)x][(int)y]);
-  //    u = tex.width*x / row2 ;
-  //    v = tex.height*(y+1)/(col2+1);
-      
-  //    vertex(x*2, y, (terrain[(int)x][(int)y])*zoom/6, u, v);
-  //    vertex(x, (y+depth)*2, (terrain[(int)x][(int)(y+depth)])*zoom/6, u, v+depth);
-  //  }
-  //  endShape();
-  //}
 }
 
 
