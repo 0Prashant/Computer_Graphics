@@ -5,6 +5,7 @@ float [][] noise;
 PeasyCam camera;
 PImage img;
 PImage tex;
+PShader shader;
 int rows = 1024;
 int cols = 512;
 float zz,xx,yy;
@@ -16,6 +17,13 @@ int fardistance = 200;
 int speed = 3;
 float depth= zoom/4;
 float tempx = 0, tempy = 0;
+int view = 50;
+int next = 80;
+float boundary[][][] = {
+                        { {0,256-10}, {0,256+10}, {next,256-view}, {next,256+view} }, 
+                        { {next,256-view}, {next,256+view}, {2*next,256-2*view}, {2*next,256+2*view} },
+                        { {3*next,256-2*view}, {3*next,256+2*view}, {3*next,256-3*view}, {3*next,256+3*view} },
+                       };
 
 
 PVector[][] globe;
@@ -66,6 +74,7 @@ void import_image()
   img = loadImage("../moon_1low.jpg");
   tex = loadImage("../8k_moon.jpg");
   wrap = loadImage("../earth.jpg");
+  shader = loadShader("../noisy.glsl");
   img.loadPixels();
   globe = new PVector[total+1][total+1];
   terrain = new float[rows*zoom][cols*zoom];
@@ -94,13 +103,8 @@ void camera_setup()
 
 void lightening()
 {
-  directionalLight(255,255,255, 0, 100, 0);
-  directionalLight(255,255,255,0,500,0);
-  ////pointLight(50, 50, 50, 0, 0, -10);
-  //noStroke();
-  ////lights();
-  //ambientLight(172, 136, 111);
-  //directionalLight(50, 50, 50, 0, 0, -10);
+  directionalLight(155,155,155, 0, 100, 0);
+  directionalLight(155,155,155,0,500,0);
 }
 
 
@@ -227,6 +231,7 @@ void display (float row1, float col1, float row2, float col2)
   {
     beginShape(TRIANGLE_STRIP);
     texture(tex);
+    //shader(shader);
     for (float x=row1; x<row2; x+=depth)
     { 
       fill(terrain[(int)x][(int)y]);
@@ -240,29 +245,16 @@ void display (float row1, float col1, float row2, float col2)
     }
     endShape();
   }
-  //   float u = 0, v = 0;
-  //for (float y=col1; y< (col2 - zoom); y+=depth)
-  //{
-  //  beginShape(TRIANGLE_STRIP);
-  //  texture(tex);
-  //  for (float x=row1; x<row2; x+=depth)
-  //  { 
-  //    //fill(terrain[(int)x][(int)y]);
-  //    u = tex.width*x / row2 ;
-  //    v = tex.height*(y+1)/(col2+1);
-      
-  //    vertex(x*2, y, (terrain[(int)x][(int)y])*zoom/6, u, v);
-  //    vertex(x, (y+depth)*2, (terrain[(int)x][(int)(y+depth)])*zoom/6, u, v+depth);
-  //  }
-  //  endShape();
-  //}
 }
 
 
 void procedural_generation()
 {
   move();
-  display(xx*zoom,cols*zoom*0.25,(xx+fardistance)*zoom,cols*zoom*0.75);
+  display(leftmost(0)*zoom, topmost(0)*zoom, rightmost(0)*zoom, bottommost(0)*zoom);
+  
+  //display(0,(256-view)*zoom,(next)*zoom,(256+view)*zoom);
+  //display(xx*zoom,cols*zoom*0.25,(xx+fardistance)*zoom,cols*zoom*0.75);
 }
 
 void move()
@@ -381,86 +373,50 @@ void sphere() {
   
 }
 
-
-//void display (float row1, float col1, float row2, float col2)
-//{
-// // textureWrap(CLAMP);
-//  for (int y=(int)col1*zoom; y< (col2 - 1)*zoom; y++)
-//  {
-//    beginShape(QUAD_STRIP);
-//    //texture(tex);
-//    for (int x=(int)row1*zoom; x<row2*zoom; x++)
-//    {  
-//      fill(terrain[x/zoom][y/zoom]);
-//      float u = tex.width / row2 * x;
-//      vertex(x, y*2, map(terrain[x/zoom][y/zoom], 0, 255, 0, 50)*zoom);
-//      vertex(x, (y+1)*2, map(terrain[x/zoom][(y+1)/zoom], 0, 255, 0, 50)*zoom);
-      
-//      //for (int a=(int)(y*zoom); a<((y+1)*zoom*2); a++)
-//      //{
-//      //  for (int b=(int)(x*zoom); b<((x+1)*zoom); b++)
-//      //  {
-//      //    float u = tex.width / row2 * x;
-//      //    vertex(a, b, map(terrain[x][y], 0, 255, 0, 50)*zoom, u, (tex.height*(y+1)/(col2+1)));
-//      //    vertex(a, b, map(terrain[x][y+1], 0, 255, 0, 50)*zoom, u, (tex.height*(y+1)/(col2+1)+1));
-//      //  }
-//      //}
-//    }
-//    endShape();
-//  }
-//}
-
-
-/*
-void display (float row1, float col1, float row2, float col2)
+float leftmost(int n)
 {
- // textureWrap(CLAMP);
-  for (float y=col1*zoom; y< (col2 - 1)*zoom; )
-  {
-    beginShape(TRIANGLE_STRIP);
-    //texture(tex);
-    for (float x=abs(row1*zoom); x<row2*zoom;)
-    {   
-      fill(terrain[(int)x/zoom][(int)y/zoom]);
-     // noise(x,y);
-      vertex(x, y*2, (map(terrain[(int)x/zoom][(int)y/zoom], 0, 255, 0, 50)+noise(-10,10))*zoom);
-      //vertex(x*zoom, (y+0.5)*zoom*2, map((terrain[(int)x][(int)y]+terrain[(int)x][(int)y+1])/2, 0, 255, 0, 50)*zoom);
-      vertex(x, (y+depth)*2, (map(terrain[(int)x/zoom][(int)(y+depth)/zoom], 0, 255, 0, 50)+noise(-10,10))*zoom);
-      
-      //fill(terrain[x][y]);
-      //vertex((x+0.5)*zoom, y*zoom*2, map((terrain[x][y]+terrain[x+1][y])/2, 0, 255, 0, 50)*zoom);
-      //vertex((x+0.5)*zoom, (y+0.5)*zoom*2, map((terrain[x][y]+terrain[x][y+1]+terrain[x+1][y]+terrain[x+1][y+1])/4, 0, 255, 0, 50)*zoom);
-      //vertex((x+0.5)*zoom, (y+1)*zoom*2, map((terrain[x][y+1]+terrain[x+1][y+1])/2, 0, 255, 0, 50)*zoom);
-      
-      //for (int b=(int)(y*zoom*2); b<((y+1)*zoom*2);)
-      //{
-      //  b+=5;
-      //  for (int a=(int)(x*zoom); a<((x+1)*zoom);)
-      //  {
-      //    a+=5;
-      //    vertex(a, b, map(terrain[x][y], 0, 255, 0, 50)*zoom);
-      //    vertex(a, b, map(terrain[x][y+1], 0, 255, 0, 50)*zoom);
-      //  }
-      //}  
-      x+=depth;
+  float val = 100000;
+  for(int i=0; i<4; i++)
+    {
+      if(boundary[n][i][0]<val)   
+        val = boundary[n][i][0];
     }
-    endShape();
-    y+=depth;
-  }
-}*/
+    print (" \n leftmost = ", val);
+  return val;
+}
 
+float rightmost(int n)
+{
+  float val = 0;
+  for(int i=0; i<4; i++)
+    {
+      if(boundary[n][i][0]>val)   
+        val = boundary[n][i][0];
+    }
+    print (" \n rightmost = ", val);
+  return val;
+}
 
-//void display (float row1, float col1, float row2, float col2)
-//{
-//  for (float y=col1; y< (col2 - zoom); y+=depth)
-//  {
-//    beginShape(TRIANGLE_STRIP);
-//    for (float x=row1; x<row2; x+=depth)
-//    {  
-//      fill(terrain[(int)x][(int)y]);
-//      vertex(x, y*2, map(terrain[(int)x][(int)y], 0, 255, 0, 50)*zoom);
-//      vertex(x, (y+depth)*2, map(terrain[(int)x][(int)(y+depth)], 0, 255, 0, 50)*zoom);
-//    }
-//    endShape();
-//  }
-//}
+float topmost(int n)
+{
+  float val = 100000;
+  for(int i=0; i<4; i++)
+    {
+      if(boundary[n][i][1]<val)   
+        val = boundary[n][i][1];
+    }
+    print (" \n topmost = ", val);
+  return val;
+}
+
+float bottommost(int n)
+{
+  float val = 0;
+  for(int i=0; i<4; i++)
+    {
+      if(boundary[n][i][1]>val)   
+        val = boundary[n][i][1];
+    }
+    print (" \n bottommost = ", val);
+  return val;
+}
