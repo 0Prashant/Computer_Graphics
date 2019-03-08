@@ -1,352 +1,303 @@
-// Elevated shader
-// https://www.shadertoy.com/view/MdX3Rr by inigo quilez
 
-// Created by inigo quilez - iq/2013
-// License Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
+Skip to content
 
-// Processing port by Raphaël de Courville.
+    Why GitHub?
+                          
+                        
+    Enterprise
+    Explore
+                          
+                        
+    Marketplace
+    Pricing
+                           
+                        
 
-#ifdef GL_ES
-precision highp float;
-#endif
+Sign in
+Sign up
 
-// Type of shader expected by Processing
-#define PROCESSING_COLOR_SHADER
+1
+5
 
-// Processing specific input
-uniform float time;
-uniform vec2 resolution;
-uniform vec2 mouse;
+    8
 
-// Layer between Processing and Shadertoy uniforms
-vec3 iResolution = vec3(resolution,0.0);
-float iGlobalTime = time;
-vec4 iMouse = vec4(mouse,0.0,0.0); // zw would normally be the click status
+thomas-moulard/gazebo-deb
+Code
+Issues 0
+Pull requests 0
+Projects 0
+Insights
+Join GitHub today
 
-// ------- Below is the unmodified Shadertoy code ----------
-// Created by inigo quilez - iq/2013
-// License Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
+GitHub is home to over 31 million developers working together to host and review code, manage projects, and build software together.
+gazebo-deb/media/materials/programs/camera_noise_gaussian_fs.glsl
+@thomas-moulard thomas-moulard Imported Upstream version 1.6.1 0018824 on Apr 9, 2013
+102 lines (90 sloc) 3.99 KB
+// This fragment shader will add Gaussian noise to a rendered image.  It's
+// intended to be instantiated via Ogre's Compositor framework so that we're
+// operating on a previously rendered image.  We're doing it a shader for
+// efficiency: a naive CPU implementation slows camera rates from 30Hz to 10Hz,
+// while this GPU implementation has no noticable effect on performance.
+//
+// We're applying additive amplifier noise, as described at:
+// http://en.wikipedia.org/wiki/Image_noise#Amplifier_noise_.28Gaussian_noise.29
+// This is uncorrelated Gaussian noise added to each pixel.  For each pixel, we
+// want to sample a new value from a Gaussian distribution and add it to each
+// channel in the input image.
+//
+// There isn't (as far as I can tell) a way to generate random values in GLSL.
+// The GPU vendors apparently don't implement the noise[1-4]() functions that
+// are described in the documentation.  What we do have is a deterministic 
+// function that does a decent job of appoximating a uniform distribution 
+// on [0,1].  But it requires a 2-D vector as input.
+//
+// So we're doing something mildly complicated:
+//
+// 1. On the CPU, before each call to this shader, generate 3 random numbers
+// that are uniformly distributed on [0,1.0] and pass them here,
+// in the `offsets` parameter.
+//
+// 2. Each time we need a random number here, add one of the CPU-provided
+// offsets to our current pixel coordinates and give the resulting vector to our
+// pseudo-random number generator.
+// 
+// 3. Implement the Box-Muller method to sample from a Gaussian distribution.
+// Normally each iteration of this method requires 2 uniform inputs and
+// gives 2 Gaussian outputs.  We're using 3 uniform inputs, with the 3rd 
+// being used to select randomly between the 2 Gaussian outputs.
+//
+// 4. Having produced a Gaussian sample, we add this value to each channel of
+// the input image.
 
-//stereo thanks to Croqueteer
-//#define STEREO 
+// The input texture, which is set up by the Ogre Compositor infrastructure.
+uniform sampler2D RT;
 
-mat3 m = mat3( 0.00,  0.80,  0.60,
-              -0.80,  0.36, -0.48,
-              -0.60, -0.48,  0.64 );
+// Other parameters are set in C++, via
+// Ogre::GpuProgramParameters::setNamedConstant()
 
-float hash( float n )
+// Random values sampled on the CPU, which we'll use as offsets into our 2-D
+// pseudo-random sampler here.
+uniform vec3 offsets;
+// Mean of the Gaussian distribution that we want to sample from.
+uniform float mean;
+// Standard deviation of the Gaussian distribution that we want to sample from.
+uniform float stddev;
+
+#define PI 3.14159265358979323846264
+
+float rand(vec2 co)
 {
-    return fract(sin(n)*43758.5453123);
+  // This one-liner can be found in many places, including:
+  // http://stackoverflow.com/questions/4200224/random-noise-functions-for-glsl
+  // I can't find any explanation for it, but experimentally it does seem to
+  // produce approximately uniformly distributed values in the interval [0,1].
+  float r = fract(sin(dot(co.xy, vec2(12.9898,78.233))) * 43758.5453);
+
+  // Make sure that we don't return 0.0
+  if(r == 0.0)
+    return 0.000000000001;
+  else
+    return r;
 }
 
-
-float noise( in vec3 x )
+vec4 gaussrand(vec2 co)
 {
-    vec3 p = floor(x);
-    vec3 f = fract(x);
+  // Box-Muller method for sampling from the normal distribution
+  // http://en.wikipedia.org/wiki/Normal_distribution#Generating_values_from_normal_distribution
+  // This method requires 2 uniform random inputs and produces 2 
+  // Gaussian random outputs.  We'll take a 3rd random variable and use it to
+  // switch between the two outputs.
 
-    f = f*f*(3.0-2.0*f);
+  float U, V, R, Z;
+  // Add in the CPU-supplied random offsets to generate the 3 random values that
+  // we'll use.
+  U = rand(co + vec2(offsets.x, offsets.x));
+  V = rand(co + vec2(offsets.y, offsets.y));
+  R = rand(co + vec2(offsets.z, offsets.z));
+  // Switch between the two random outputs.
+  if(R < 0.5)
+    Z = sqrt(-2.0 * log(U)) * sin(2.0 * PI * V);
+  else
+    Z = sqrt(-2.0 * log(U)) * cos(2.0 * PI * V);
 
-    float n = p.x + p.y*57.0 + 113.0*p.z;
+  // Apply the stddev and mean.
+  Z = Z * stddev + mean;
 
-    float res = mix(mix(mix( hash(n+  0.0), hash(n+  1.0),f.x),
-                        mix( hash(n+ 57.0), hash(n+ 58.0),f.x),f.y),
-                    mix(mix( hash(n+113.0), hash(n+114.0),f.x),
-                        mix( hash(n+170.0), hash(n+171.0),f.x),f.y),f.z);
-    return res;
+  // Return it as a vec4, to be added to the input ("true") color.
+  return vec4(Z, Z, Z, 0.0);
 }
 
-
-
-
-vec3 noised( in vec2 x )
+void main()
 {
-    vec2 p = floor(x);
-    vec2 f = fract(x);
-
-    vec2 u = f*f*(3.0-2.0*f);
-
-    float n = p.x + p.y*57.0;
-
-    float a = hash(n+  0.0);
-    float b = hash(n+  1.0);
-    float c = hash(n+ 57.0);
-    float d = hash(n+ 58.0);
-	return vec3(a+(b-a)*u.x+(c-a)*u.y+(a-b-c+d)*u.x*u.y,
-				30.0*f*f*(f*(f-2.0)+1.0)*(vec2(b-a,c-a)+(a-b-c+d)*u.yx));
-
+  // Add the sampled noise to the input color and clamp the result to a valid
+  // range.
+  gl_FragColor = clamp(texture2D(RT, gl_TexCoord[0].xy) + 
+    gaussrand(gl_TexCoord[0].xy), 0.0, 1.0);
 }
 
-float noise( in vec2 x )
+    © 2019 GitHub, Inc.
+    Terms
+    Privacy
+    Security
+    Status
+    Help
+
+    Contact GitHub
+    Pricing
+    API
+    Training
+    Blog
+    About
+
+
+Skip to content
+
+    Why GitHub?
+                          
+                        
+    Enterprise
+    Explore
+                          
+                        
+    Marketplace
+    Pricing
+                           
+                        
+
+Sign in
+Sign up
+
+1
+5
+
+    8
+
+thomas-moulard/gazebo-deb
+Code
+Issues 0
+Pull requests 0
+Projects 0
+Insights
+Join GitHub today
+
+GitHub is home to over 31 million developers working together to host and review code, manage projects, and build software together.
+gazebo-deb/media/materials/programs/camera_noise_gaussian_fs.glsl
+@thomas-moulard thomas-moulard Imported Upstream version 1.6.1 0018824 on Apr 9, 2013
+102 lines (90 sloc) 3.99 KB
+// This fragment shader will add Gaussian noise to a rendered image.  It's
+// intended to be instantiated via Ogre's Compositor framework so that we're
+// operating on a previously rendered image.  We're doing it a shader for
+// efficiency: a naive CPU implementation slows camera rates from 30Hz to 10Hz,
+// while this GPU implementation has no noticable effect on performance.
+//
+// We're applying additive amplifier noise, as described at:
+// http://en.wikipedia.org/wiki/Image_noise#Amplifier_noise_.28Gaussian_noise.29
+// This is uncorrelated Gaussian noise added to each pixel.  For each pixel, we
+// want to sample a new value from a Gaussian distribution and add it to each
+// channel in the input image.
+//
+// There isn't (as far as I can tell) a way to generate random values in GLSL.
+// The GPU vendors apparently don't implement the noise[1-4]() functions that
+// are described in the documentation.  What we do have is a deterministic 
+// function that does a decent job of appoximating a uniform distribution 
+// on [0,1].  But it requires a 2-D vector as input.
+//
+// So we're doing something mildly complicated:
+//
+// 1. On the CPU, before each call to this shader, generate 3 random numbers
+// that are uniformly distributed on [0,1.0] and pass them here,
+// in the `offsets` parameter.
+//
+// 2. Each time we need a random number here, add one of the CPU-provided
+// offsets to our current pixel coordinates and give the resulting vector to our
+// pseudo-random number generator.
+// 
+// 3. Implement the Box-Muller method to sample from a Gaussian distribution.
+// Normally each iteration of this method requires 2 uniform inputs and
+// gives 2 Gaussian outputs.  We're using 3 uniform inputs, with the 3rd 
+// being used to select randomly between the 2 Gaussian outputs.
+//
+// 4. Having produced a Gaussian sample, we add this value to each channel of
+// the input image.
+
+// The input texture, which is set up by the Ogre Compositor infrastructure.
+uniform sampler2D RT;
+
+// Other parameters are set in C++, via
+// Ogre::GpuProgramParameters::setNamedConstant()
+
+// Random values sampled on the CPU, which we'll use as offsets into our 2-D
+// pseudo-random sampler here.
+uniform vec3 offsets;
+// Mean of the Gaussian distribution that we want to sample from.
+uniform float mean;
+// Standard deviation of the Gaussian distribution that we want to sample from.
+uniform float stddev;
+
+#define PI 3.14159265358979323846264
+
+float rand(vec2 co)
 {
-    vec2 p = floor(x);
-    vec2 f = fract(x);
+  // This one-liner can be found in many places, including:
+  // http://stackoverflow.com/questions/4200224/random-noise-functions-for-glsl
+  // I can't find any explanation for it, but experimentally it does seem to
+  // produce approximately uniformly distributed values in the interval [0,1].
+  float r = fract(sin(dot(co.xy, vec2(12.9898,78.233))) * 43758.5453);
 
-    f = f*f*(3.0-2.0*f);
-
-    float n = p.x + p.y*57.0;
-
-    float res = mix(mix( hash(n+  0.0), hash(n+  1.0),f.x),
-                    mix( hash(n+ 57.0), hash(n+ 58.0),f.x),f.y);
-
-    return res;
+  // Make sure that we don't return 0.0
+  if(r == 0.0)
+    return 0.000000000001;
+  else
+    return r;
 }
 
-float fbm( vec3 p )
+vec4 gaussrand(vec2 co)
 {
-    float f = 0.0;
+  // Box-Muller method for sampling from the normal distribution
+  // http://en.wikipedia.org/wiki/Normal_distribution#Generating_values_from_normal_distribution
+  // This method requires 2 uniform random inputs and produces 2 
+  // Gaussian random outputs.  We'll take a 3rd random variable and use it to
+  // switch between the two outputs.
 
-    f += 0.5000*noise( p ); p = m*p*2.02;
-    f += 0.2500*noise( p ); p = m*p*2.03;
-    f += 0.1250*noise( p ); p = m*p*2.01;
-    f += 0.0625*noise( p );
+  float U, V, R, Z;
+  // Add in the CPU-supplied random offsets to generate the 3 random values that
+  // we'll use.
+  U = rand(co + vec2(offsets.x, offsets.x));
+  V = rand(co + vec2(offsets.y, offsets.y));
+  R = rand(co + vec2(offsets.z, offsets.z));
+  // Switch between the two random outputs.
+  if(R < 0.5)
+    Z = sqrt(-2.0 * log(U)) * sin(2.0 * PI * V);
+  else
+    Z = sqrt(-2.0 * log(U)) * cos(2.0 * PI * V);
 
-    return f/0.9375;
+  // Apply the stddev and mean.
+  Z = Z * stddev + mean;
+
+  // Return it as a vec4, to be added to the input ("true") color.
+  return vec4(Z, Z, Z, 0.0);
 }
 
-mat2 m2 = mat2(1.6,-1.2,1.2,1.6);
-	
-float fbm( vec2 p )
+void main()
 {
-    float f = 0.0;
-
-    f += 0.5000*noise( p ); p = m2*p*2.02;
-    f += 0.2500*noise( p ); p = m2*p*2.03;
-    f += 0.1250*noise( p ); p = m2*p*2.01;
-    f += 0.0625*noise( p );
-
-    return f/0.9375;
+  // Add the sampled noise to the input color and clamp the result to a valid
+  // range.
+  gl_FragColor = clamp(texture2D(RT, gl_TexCoord[0].xy) + 
+    gaussrand(gl_TexCoord[0].xy), 0.0, 1.0);
 }
 
-float terrain( in vec2 x )
-{
-	vec2  p = x*0.003;
-    float a = 0.0;
-    float b = 1.0;
-	vec2  d = vec2(0.0);
-    for(int i=0;i<5; i++)
-    {
-        vec3 n = noised(p);
-        d += n.yz;
-        a += b*n.x/(1.0+dot(d,d));
-		b *= 0.5;
-        p=mat2(1.6,-1.2,1.2,1.6)*p;
-    }
+    © 2019 GitHub, Inc.
+    Terms
+    Privacy
+    Security
+    Status
+    Help
 
-    return 140.0*a;
-}
-
-float terrain2( in vec2 x )
-{
-	vec2  p = x*0.003;
-    float a = 0.0;
-    float b = 1.0;
-	vec2  d = vec2(0.0);
-    for(int i=0;i<14; i++)
-    {
-        vec3 n = noised(p);
-        d += n.yz;
-        a += b*n.x/(1.0+dot(d,d));
-		b *= 0.5;
-        p=m2*p;
-    }
-
-    return 140.0*a;
-}
+    Contact GitHub
+    Pricing
+    API
+    Training
+    Blog
+    About
 
 
-float map( in vec3 p )
-{
-	float h = terrain(p.xz);
-	
-	float ss = 0.03;
-	float hh = h*ss;
-	float fh = fract(hh);
-	float ih = floor(hh);
-	fh = mix( sqrt(fh), fh, smoothstep(50.0,140.0,h) );
-	h = (ih+fh)/ss;
-	
-    return p.y - h;
-}
-
-float map2( in vec3 p )
-{
-	float h = terrain2(p.xz);
-
-	
-	float ss = 0.03;
-	float hh = h*ss;
-	float fh = fract(hh);
-	float ih = floor(hh);
-	fh = mix( sqrt(fh), fh, smoothstep(50.0,140.0,h) );
-	h = (ih+fh)/ss;
-	
-    return p.y - h;
-}
-
-bool jinteresct(in vec3 rO, in vec3 rD, out float resT )
-{
-    float h = 0.0;
-    float t = 0.0;
-	for( int j=0; j<120; j++ )
-	{
-        //if( t>2000.0 ) break;
-		
-	    vec3 p = rO + t*rD;
-if( p.y>300.0 ) break;
-        h = map( p );
-
-		if( h<0.1 )
-		{
-			resT = t; 
-			return true;
-		}
-		t += max(0.1,0.5*h);
-
-	}
-
-	if( h<5.0 )
-    {
-	    resT = t;
-	    return true;
-	}
-	return false;
-}
-
-float sinteresct(in vec3 rO, in vec3 rD )
-{
-    float res = 1.0;
-    float t = 0.0;
-	for( int j=0; j<50; j++ )
-	{
-        //if( t>1000.0 ) break;
-	    vec3 p = rO + t*rD;
-
-        float h = map( p );
-
-		if( h<0.1 )
-		{
-			return 0.0;
-		}
-		res = min( res, 16.0*h/t );
-		t += h;
-
-	}
-
-	return clamp( res, 0.0, 1.0 );
-}
-
-vec3 calcNormal( in vec3 pos, float t )
-{
-	float e = 0.001;
-	e = 0.001*t;
-    vec3  eps = vec3(e,0.0,0.0);
-    vec3 nor;
-    nor.x = map2(pos+eps.xyy) - map2(pos-eps.xyy);
-    nor.y = map2(pos+eps.yxy) - map2(pos-eps.yxy);
-    nor.z = map2(pos+eps.yyx) - map2(pos-eps.yyx);
-    return normalize(nor);
-}
-
-vec3 camPath( float time )
-{
-    vec2 p = 600.0*vec2( cos(1.4+0.37*time), 
-                         cos(3.2+0.31*time) );
-
-	return vec3( p.x, 0.0, p.y );
-}
-
-void main(void)
-{
-    vec2 xy = -1.0 + 2.0*gl_FragCoord.xy / iResolution.xy;
-
-	vec2 s = xy*vec2(1.75,1.0);
-
-	#ifdef STEREO
-	float isCyan = mod(gl_FragCoord.x + mod(gl_FragCoord.y,2.0),2.0);
-    #endif
-	
-    float time = iGlobalTime*.15;
-
-	vec3 light1 = normalize( vec3(  0.4, 0.22,  0.6 ) );
-	vec3 light2 = vec3( -0.707, 0.000, -0.707 );
-
-
-	vec3 campos = camPath( time );
-	vec3 camtar = camPath( time + 3.0 );
-	campos.y = terrain( campos.xz ) + 15.0;
-	camtar.y = campos.y*0.5;
-
-	float roll = 0.1*cos(0.1*time);
-	vec3 cw = normalize(camtar-campos);
-	vec3 cp = vec3(sin(roll), cos(roll),0.0);
-	vec3 cu = normalize(cross(cw,cp));
-	vec3 cv = normalize(cross(cu,cw));
-	vec3 rd = normalize( s.x*cu + s.y*cv + 1.6*cw );
-
-	#ifdef STEREO
-	campos += 2.0*cu*isCyan; // move camera to the right - the rd vector is still good
-    #endif
-
-	float sundot = clamp(dot(rd,light1),0.0,1.0);
-	vec3 col;
-    float t;
-    if( !jinteresct(campos,rd,t) )
-    {
-     	col = 0.9*vec3(0.97,.99,1.0)*(1.0-0.3*rd.y);
-		col += 0.2*vec3(0.8,0.7,0.5)*pow( sundot, 4.0 );
-	}
-	else
-	{
-		vec3 pos = campos + t*rd;
-
-        vec3 nor = calcNormal( pos, t );
-
-		float dif1 = clamp( dot( light1, nor ), 0.0, 1.0 );
-		float dif2 = clamp( 0.2 + 0.8*dot( light2, nor ), 0.0, 1.0 );
-		float sh = 1.0;
-		if( dif1>0.001 ) 
-			sh = sinteresct(pos+light1*20.0,light1);
-		
-		vec3 dif1v = vec3(dif1);
-		dif1v *= vec3( sh, sh*sh*0.5+0.5*sh, sh*sh );
-
-		float r = noise( 7.0*pos.xz );
-
-        col = (r*0.25+0.75)*0.9*mix( vec3(0.10,0.05,0.03), vec3(0.13,0.10,0.08), clamp(terrain2( vec2(pos.x,pos.y*48.0))/200.0,0.0,1.0) );
-		col = mix( col, 0.17*vec3(0.5,.23,0.04)*(0.50+0.50*r),smoothstep(0.70,0.9,nor.y) );
-        col = mix( col, 0.10*vec3(0.2,.30,0.00)*(0.25+0.75*r),smoothstep(0.95,1.0,nor.y) );
-  	    col *= 0.75;
-         // snow
-        #if 1
-		float h = smoothstep(55.0,80.0,pos.y + 25.0*fbm(0.01*pos.xz) );
-        float e = smoothstep(1.0-0.5*h,1.0-0.1*h,nor.y);
-        float o = 0.3 + 0.7*smoothstep(0.0,0.1,nor.x+h*h);
-        float s = h*e*o;
-        s = smoothstep( 0.1, 0.9, s );
-        col = mix( col, 0.4*vec3(0.6,0.65,0.7), s );
-        #endif
-
-		
-		vec3 brdf  = 2.0*vec3(0.17,0.19,0.20)*clamp(nor.y,0.0,1.0);
-		     brdf += 6.0*vec3(1.00,0.95,0.80)*dif1v;
-		     brdf += 2.0*vec3(0.20,0.20,0.20)*dif2;
-
-		col *= brdf;
-		
-		float fo = 1.0-exp(-pow(0.0015*t,1.5));
-		vec3 fco = vec3(0.7) + 0.6*vec3(0.8,0.7,0.5)*pow( sundot, 4.0 );
-		col = mix( col, fco, fo );
-	}
-
-	col = sqrt(col);
-
-	vec2 uv = xy*0.5+0.5;
-	col *= 0.7 + 0.3*pow(16.0*uv.x*uv.y*(1.0-uv.x)*(1.0-uv.y),0.1);
-	
-    #ifdef STEREO	
-    col *= vec3( isCyan, 1.0-isCyan, 1.0-isCyan );	
-	#endif
-	
-	gl_FragColor=vec4(col,1.0);
-}

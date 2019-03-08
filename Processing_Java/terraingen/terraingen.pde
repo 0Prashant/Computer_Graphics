@@ -17,6 +17,11 @@ int speed = 3;
 float depth= zoom/4;
 float tempx = 0, tempy = 0;
 
+
+PVector[][] globe;
+int total = 100;
+PImage wrap;
+
 void setup()
 {
   fullScreen(P3D);
@@ -42,14 +47,15 @@ void setup()
   terrain = convolute9(rows*zoom, cols*zoom, terrain); 
   terrain = convolute9(rows*zoom, cols*zoom, terrain);
   smooth(4);
-  lightening();
   frameRate(60);
 }
 
 void draw()
 {
   background(0);
+  lightening();
   initialize_orientation();
+  sphere();
   translate(-200,0,0);
   procedural_generation();
 }
@@ -58,7 +64,9 @@ void import_image()
 {
   img = loadImage("../moon_1low.jpg");
   tex = loadImage("../8k_moon.jpg");
+  wrap = loadImage("../earth.jpg");
   img.loadPixels();
+  globe = new PVector[total+1][total+1];
   terrain = new float[rows*zoom][cols*zoom];
   for (int i=0; i<rows; i++)
   {
@@ -85,11 +93,13 @@ void camera_setup()
 
 void lightening()
 {
-  //pointLight(50, 50, 50, 0, 0, -10);
-  noStroke();
-  //lights();
-  ambientLight(172, 136, 111);
-  directionalLight(50, 50, 50, 0, 0, -10);
+  directionalLight(255,255,255, 0, 100, 0);
+  directionalLight(255,255,255,0,500,0);
+  ////pointLight(50, 50, 50, 0, 0, -10);
+  //noStroke();
+  ////lights();
+  //ambientLight(172, 136, 111);
+  //directionalLight(50, 50, 50, 0, 0, -10);
 }
 
 
@@ -313,7 +323,40 @@ void keyPressed()
   }
 }
 
-
+void sphere() {
+  float del_u = wrap.width/total;
+  float del_v = wrap.height/total;
+  float u = 0;
+  float v = 0;
+  background(0);
+  noStroke();
+  float r = 200;
+  for (int i = 0; i < total+1; i++) {
+    float lat = map(i, 0, total, 0, PI);
+    for (int j = 0; j < total+1; j++) {
+      float lon = map(j, 0, total, 0, TWO_PI);
+      float x = r * sin(lat) * cos(lon);
+      float y = r * sin(lat) * sin(lon);
+      float z = r * cos(lat);
+      globe[i][j] = new PVector(x+(fardistance+100)*zoom, y+(cols)*zoom, z+50*zoom);
+    }
+  }
+  for (int i = 0; i < total; i++) {
+    beginShape(TRIANGLE_STRIP);
+    texture(wrap);
+    for (int j = 0; j < total+1; j++) {
+      PVector v1 = globe[i][j];
+      vertex(v1.x, v1.y, v1.z,u,v);
+      PVector v2 = globe[i+1][j];
+      vertex(v2.x, v2.y, v2.z,u,v+del_v);
+      u += del_u;
+    }
+   v+= del_v;
+   u = 0;
+   endShape();
+  }
+  
+}
 
 
 //void display (float row1, float col1, float row2, float col2)
