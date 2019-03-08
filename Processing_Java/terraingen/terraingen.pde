@@ -14,18 +14,19 @@ boolean gofront, goback, goright, goleft;
 float camera_direction=0;
 int camera_angle = 100;
 int fardistance = 200;
-int speed = 1;
+int speed = 2;
 float depth= zoom/8;
 float tempx = 0, tempy = 0;
 int side_side_view = 20;
 int next = 40;
+int y_offset = 256;
 float boundary[][][] = {
-                        { {0,256-10}, {0,256+10}, {next,256-side_side_view-10}, {next,256+side_side_view+10} }, 
-                        { {next,256-side_side_view}, {next,256+side_side_view}, {2*next,256-2*side_side_view}, {2*next,256+2*side_side_view} },
-                        { {2*next,256-2*side_side_view}, {2*next,256+2*side_side_view}, {3*next,256-3*side_side_view}, {3*next,256+3*side_side_view} },
-                        { {3*next,256-3*side_side_view}, {3*next,256+3*side_side_view}, {4*next,256-4*side_side_view}, {4*next,256+4*side_side_view} },
-                        { {4*next,256-4*side_side_view}, {4*next,256+4*side_side_view}, {5*next,256-5*side_side_view}, {5*next,256+5*side_side_view} },
-                        { {5*next,256-5*side_side_view}, {5*next,256+5*side_side_view}, {6*next,256-6*side_side_view}, {6*next,256+6*side_side_view} },
+                        { {0,-10}, {0,+10}, {next,-side_side_view-10}, {next,+side_side_view+10} }, 
+                        { {next,-side_side_view}, {next,+side_side_view}, {2*next,-2*side_side_view-10}, {2*next,+2*side_side_view+10} },
+                        { {2*next,-2*side_side_view}, {2*next,+2*side_side_view}, {3*next,-3*side_side_view}, {3*next,+3*side_side_view} },
+                        { {3*next,-3*side_side_view}, {3*next,+3*side_side_view}, {4*next,-4*side_side_view}, {4*next,+4*side_side_view} },
+                        { {4*next,-4*side_side_view}, {4*next,+4*side_side_view}, {5*next,-5*side_side_view}, {5*next,+5*side_side_view} },
+                        { {5*next,-5*side_side_view}, {5*next,+5*side_side_view}, {6*next,-6*side_side_view}, {6*next,+6*side_side_view} },
                        };
 
 
@@ -238,8 +239,8 @@ void display_level3 (float row1, float col1, float row2, float col2)
     for (float x=row1; x<row2; x+=depth)
     { 
       fill(terrain[(int)x][(int)y]);
-      u = tex.width*x / (row2*4) ;
-      v = tex.height*(y+1)/(col2+1);
+      u = tex.width*x / (rows*zoom) ;
+      v = tex.height*(y+1)/((cols+1)*zoom);
       //vertex(x, y*2, (map(terrain[(int)x][(int)y], 0, 255, 0, 50)+noise)*zoom);
       //vertex(x, (y+depth)*2, (map(terrain[(int)x][(int)(y+depth)], 0, 255, 0, 50)+noise)*zoom);
       //float noise = map(noise(x,y,terrain[(int)x][(int)y]),0,1,-1,1);
@@ -261,8 +262,8 @@ void display_level2 (float row1, float col1, float row2, float col2)
     for (float x=row1; x<row2; x+=level2_depth)
     { 
       fill(terrain[(int)x][(int)y]);
-      u = tex.width*x / (row2*4) ;
-      v = tex.height*(y+1)/(col2+1);
+      u = tex.width*x / (rows*zoom) ;
+      v = tex.height*(y+1)/((cols+1)*zoom);
       //vertex(x, y*2, (map(terrain[(int)x][(int)y], 0, 255, 0, 50)+noise)*zoom);
       //vertex(x, (y+depth)*2, (map(terrain[(int)x][(int)(y+depth)], 0, 255, 0, 50)+noise)*zoom);
       //float noise = map(noise(x,y,terrain[(int)x][(int)y]),0,1,-1,1);
@@ -283,8 +284,8 @@ void display_level2 (float row1, float col1, float row2, float col2)
     for (float x=row1; x<row2; x+=level2_depth)
     { 
       fill(terrain[(int)x][(int)y]);
-      u = tex.width*x / (row2*4) ;
-      v = tex.height*(y+1)/(col2+1);
+      u = tex.width*x / (rows*zoom) ;
+      v = tex.height*(y+1)/((cols+1)*zoom);
       //vertex(x, y*2, (map(terrain[(int)x][(int)y], 0, 255, 0, 50)+noise)*zoom);
       //vertex(x, (y+depth)*2, (map(terrain[(int)x][(int)(y+depth)], 0, 255, 0, 50)+noise)*zoom);
       //float noise = map(noise(x,y,terrain[(int)x][(int)y]),0,1,-1,1);
@@ -298,21 +299,27 @@ void display_level2 (float row1, float col1, float row2, float col2)
 void procedural_generation()
 {
   move();
+  rotate_boundaries();
   for(int i=0; i<2; i++)
   {
-    display_level3(leftmost(i)*zoom, topmost(i)*zoom, (rightmost(i)+1)*zoom, (bottommost(i)+1)*zoom);
+    display_level3((xx+leftmost(i))*zoom, (yy/2+y_offset+topmost(i))*zoom, (xx+rightmost(i)+1)*zoom, (yy/2+y_offset+bottommost(i)+1)*zoom);
   }
   for(int i=1; i<4; i++)
   {
-    display_level2(leftmost(i)*zoom, topmost(i)*zoom, (rightmost(i)+1)*zoom, (bottommost(i)+1)*zoom);
+    display_level2((xx+leftmost(i))*zoom, (yy/2+y_offset+topmost(i))*zoom, (xx+rightmost(i)+1)*zoom, (yy/2+y_offset+bottommost(i)+1)*zoom);
   }
   for(int i=2; i<6; i++)
   {
-    display_level1(leftmost(i)*zoom, topmost(i)*zoom, (rightmost(i)+1)*zoom, (bottommost(i)+1)*zoom);
+    display_level1((xx+leftmost(i))*zoom, (yy/2+y_offset+topmost(i))*zoom, (xx+rightmost(i)+1)*zoom, (yy/2+y_offset+bottommost(i)+1)*zoom);
   }
   //display(0,(256-side_side_view)*zoom,(next)*zoom,(256+side_side_view)*zoom);
   //display(xx*zoom,cols*zoom*0.25,(xx+fardistance)*zoom,cols*zoom*0.75);
 }
+
+void rotate_boundaries()
+{
+}
+
 
 void move()
 {
