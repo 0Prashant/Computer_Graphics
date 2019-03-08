@@ -46,6 +46,7 @@ void setup()
   terrain = convolute9(rows*zoom, cols*zoom, terrain); 
   terrain = convolute9(rows*zoom, cols*zoom, terrain); 
   terrain = convolute9(rows*zoom, cols*zoom, terrain);
+  //terrain = final_noise(terrain);
   smooth(4);
   frameRate(60);
 }
@@ -161,7 +162,25 @@ float[][] noise_setup(float[][] array)
   }
   return new_matrix;
 }
-
+float[][] final_noise(float[][] array)
+{
+  float[][] new_matrix = new float[rows*zoom][cols*zoom];
+  for (int j = (0); j < (cols*zoom); j++)
+  {
+    for(int i = (0); i < (rows*zoom); i++)
+    {
+      new_matrix[i][j] = array[((int)(i/zoom))*zoom][((int)(j/zoom))*zoom];
+    }
+  } 
+  for (int j = (0); j < (cols*zoom); j++)
+  {
+    for(int i = (0); i < (rows*zoom); i++)
+    {
+      new_matrix[i][j] += map(noise(i,j,new_matrix[i][j]),0,1,-1,1);
+    }
+  }
+  return new_matrix;
+}
 void initialize_orientation()
 {  
   translate(rows*zoom/2, cols*zoom/2,0);
@@ -203,17 +222,21 @@ void movez(float direction)
 
 void display (float row1, float col1, float row2, float col2)
 {
+  float u = 0, v = 0;
   for (float y=col1; y< (col2 - zoom); y+=depth)
   {
     beginShape(TRIANGLE_STRIP);
+    texture(tex);
     for (float x=row1; x<row2; x+=depth)
     { 
       fill(terrain[(int)x][(int)y]);
+      u = tex.width*x / (row2*4) ;
+      v = tex.height*(y+1)/(col2+1);
       //vertex(x, y*2, (map(terrain[(int)x][(int)y], 0, 255, 0, 50)+noise)*zoom);
       //vertex(x, (y+depth)*2, (map(terrain[(int)x][(int)(y+depth)], 0, 255, 0, 50)+noise)*zoom);
-      
-      vertex(x, y*2, (terrain[(int)x][(int)y])*zoom/6);
-      vertex(x, (y+depth)*2, (terrain[(int)x][(int)(y+depth)])*zoom/6);
+      //float noise = map(noise(x,y,terrain[(int)x][(int)y]),0,1,-1,1);
+      vertex(x, y*2, (terrain[(int)x][(int)y])*zoom/6,u,v);
+      vertex(x, (y+depth)*2, (terrain[(int)x][(int)(y+depth)])*zoom/6,u,v+depth);
     }
     endShape();
   }
