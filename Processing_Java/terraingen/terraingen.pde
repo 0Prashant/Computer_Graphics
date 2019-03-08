@@ -14,7 +14,7 @@ boolean gofront, goback, goright, goleft;
 float camera_direction=0;
 int camera_angle = 100;
 int fardistance = 200;
-int speed = 3;
+int speed = 1;
 float depth= zoom/8;
 float tempx = 0, tempy = 0;
 int side_side_view = 20;
@@ -383,6 +383,7 @@ void keyPressed()
     depth = zoom/8;
   if (key == 'P' || key == 'p')
   { 
+    depth = zoom/8;
     gofront = false;
     goback = false;
     goright = false;
@@ -436,7 +437,7 @@ float leftmost(int n)
       if(boundary[n][i][0]<val)   
         val = boundary[n][i][0];
     }
-    print (" \n leftmost = ", val);
+    //print (" \n leftmost = ", val);
   return val;
 }
 
@@ -448,7 +449,7 @@ float rightmost(int n)
       if(boundary[n][i][0]>val)   
         val = boundary[n][i][0];
     }
-    print (" \n rightmost = ", val);
+    //print (" \n rightmost = ", val);
   return val;
 }
 
@@ -460,7 +461,7 @@ float topmost(int n)
       if(boundary[n][i][1]<val)   
         val = boundary[n][i][1];
     }
-    print (" \n topmost = ", val);
+    //print (" \n topmost = ", val);
   return val;
 }
 
@@ -472,6 +473,6 @@ float bottommost(int n)
       if(boundary[n][i][1]>val)   
         val = boundary[n][i][1];
     }
-    print (" \n bottommost = ", val);
+    //print (" \n bottommost = ", val);
   return val;
 }
