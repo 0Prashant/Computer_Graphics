@@ -20,6 +20,14 @@ float tempx = 0, tempy = 0;
 int side_side_view = 20;
 int next = 40;
 int y_offset = 256;
+float initial_boundary[][][] = {
+                        { {0,-10}, {0,+10}, {next,-side_side_view-10}, {next,+side_side_view+10} }, 
+                        { {next,-side_side_view}, {next,+side_side_view}, {2*next,-2*side_side_view-10}, {2*next,+2*side_side_view+10} },
+                        { {2*next,-2*side_side_view}, {2*next,+2*side_side_view}, {3*next,-3*side_side_view}, {3*next,+3*side_side_view} },
+                        { {3*next,-3*side_side_view}, {3*next,+3*side_side_view}, {4*next,-4*side_side_view}, {4*next,+4*side_side_view} },
+                        { {4*next,-4*side_side_view}, {4*next,+4*side_side_view}, {5*next,-5*side_side_view}, {5*next,+5*side_side_view} },
+                        { {5*next,-5*side_side_view}, {5*next,+5*side_side_view}, {6*next,-6*side_side_view}, {6*next,+6*side_side_view} },
+                       };
 float boundary[][][] = {
                         { {0,-10}, {0,+10}, {next,-side_side_view-10}, {next,+side_side_view+10} }, 
                         { {next,-side_side_view}, {next,+side_side_view}, {2*next,-2*side_side_view-10}, {2*next,+2*side_side_view+10} },
@@ -233,21 +241,31 @@ void display_level3 (float row1, float col1, float row2, float col2)
   float u = 0, v = 0;
   for (float y=col1; y< (col2 - zoom); y+=depth)
   {
-    beginShape(TRIANGLE_STRIP);
-    texture(tex);
-    //shader(shader);
-    for (float x=row1; x<row2; x+=depth)
-    { 
-      fill(terrain[(int)x][(int)y]);
-      u = tex.width*x / (rows*zoom) ;
-      v = tex.height*(y+1)/((cols+1)*zoom);
-      //vertex(x, y*2, (map(terrain[(int)x][(int)y], 0, 255, 0, 50)+noise)*zoom);
-      //vertex(x, (y+depth)*2, (map(terrain[(int)x][(int)(y+depth)], 0, 255, 0, 50)+noise)*zoom);
-      //float noise = map(noise(x,y,terrain[(int)x][(int)y]),0,1,-1,1);
-      vertex(x, y*2, (terrain[(int)x][(int)y])*zoom/6,u,v);
-      vertex(x, (y+depth)*2, (terrain[(int)x][(int)(y+depth)])*zoom/6,u,v+depth);
+    if((y>511*zoom)||y<0)
+      continue;
+    else
+    {
+      beginShape(TRIANGLE_STRIP);
+      texture(tex);
+      //shader(shader);
+      for (float x=row1; x<row2; x+=depth)
+      {
+        if((x>1023*zoom)||x<0)
+          continue;
+        else
+        {
+          fill(terrain[(int)x][(int)y]);
+          u = tex.width*x / (rows*zoom) ;
+          v = tex.height*(y+1)/((cols+1)*zoom);
+          //vertex(x, y*2, (map(terrain[(int)x][(int)y], 0, 255, 0, 50)+noise)*zoom);
+          //vertex(x, (y+depth)*2, (map(terrain[(int)x][(int)(y+depth)], 0, 255, 0, 50)+noise)*zoom);
+          //float noise = map(noise(x,y,terrain[(int)x][(int)y]),0,1,-1,1);
+          vertex(x, y*2, (terrain[(int)x][(int)y])*zoom/6,u,v);
+          vertex(x, (y+depth)*2, (terrain[(int)x][(int)(y+depth)])*zoom/6,u,v+depth);
+        }      
+      }
+      endShape();
     }
-    endShape();
   }
 }
 void display_level2 (float row1, float col1, float row2, float col2)
@@ -256,43 +274,65 @@ void display_level2 (float row1, float col1, float row2, float col2)
   float u = 0, v = 0;
   for (float y=col1; y< (col2 - zoom); y+=level2_depth)
   {
-    beginShape(TRIANGLE_STRIP);
-    texture(tex);
-    //shader(shader);
-    for (float x=row1; x<row2; x+=level2_depth)
-    { 
-      fill(terrain[(int)x][(int)y]);
-      u = tex.width*x / (rows*zoom) ;
-      v = tex.height*(y+1)/((cols+1)*zoom);
-      //vertex(x, y*2, (map(terrain[(int)x][(int)y], 0, 255, 0, 50)+noise)*zoom);
-      //vertex(x, (y+depth)*2, (map(terrain[(int)x][(int)(y+depth)], 0, 255, 0, 50)+noise)*zoom);
-      //float noise = map(noise(x,y,terrain[(int)x][(int)y]),0,1,-1,1);
-      vertex(x, y*2, (terrain[(int)x][(int)y])*zoom/6,u,v);
-      vertex(x, (y+level2_depth)*2, (terrain[(int)x][(int)(y+level2_depth)])*zoom/6,u,v+level2_depth);
+    if((y>511*zoom)||y<0)
+      continue;
+    else
+    {
+      beginShape(TRIANGLE_STRIP);
+      texture(tex);
+      //shader(shader);
+      for (float x=row1; x<row2; x+=level2_depth)
+      {
+        if((x>1023*zoom)||x<0)
+          continue;
+        else
+        {
+          fill(terrain[(int)x][(int)y]);
+          u = tex.width*x / (rows*zoom) ;
+          v = tex.height*(y+1)/((cols+1)*zoom);
+          //vertex(x, y*2, (map(terrain[(int)x][(int)y], 0, 255, 0, 50)+noise)*zoom);
+          //vertex(x, (y+depth)*2, (map(terrain[(int)x][(int)(y+depth)], 0, 255, 0, 50)+noise)*zoom);
+          //float noise = map(noise(x,y,terrain[(int)x][(int)y]),0,1,-1,1);
+          vertex(x, y*2, (terrain[(int)x][(int)y])*zoom/6,u,v);
+          vertex(x, (y+level2_depth)*2, (terrain[(int)x][(int)(y+level2_depth)])*zoom/6,u,v+level2_depth);
+        }      
+      }
+      endShape();
     }
-    endShape();
   }
-}void display_level1 (float row1, float col1, float row2, float col2)
+}
+
+void display_level1 (float row1, float col1, float row2, float col2)
 {
-  float level2_depth = depth*4;
+  float level1_depth = depth*4;
   float u = 0, v = 0;
-  for (float y=col1; y< (col2 - zoom); y+=level2_depth)
+  for (float y=col1; y< (col2 - zoom); y+=level1_depth)
   {
-    beginShape(TRIANGLE_STRIP);
-    texture(tex);
-    //shader(shader);
-    for (float x=row1; x<row2; x+=level2_depth)
-    { 
-      fill(terrain[(int)x][(int)y]);
-      u = tex.width*x / (rows*zoom) ;
-      v = tex.height*(y+1)/((cols+1)*zoom);
-      //vertex(x, y*2, (map(terrain[(int)x][(int)y], 0, 255, 0, 50)+noise)*zoom);
-      //vertex(x, (y+depth)*2, (map(terrain[(int)x][(int)(y+depth)], 0, 255, 0, 50)+noise)*zoom);
-      //float noise = map(noise(x,y,terrain[(int)x][(int)y]),0,1,-1,1);
-      vertex(x, y*2, (terrain[(int)x][(int)y])*zoom/6,u,v);
-      vertex(x, (y+level2_depth)*2, (terrain[(int)x][(int)(y+level2_depth)])*zoom/6,u,v+level2_depth);
+    if((y>511*zoom)||y<0)
+      continue;
+    else
+    {
+      beginShape(TRIANGLE_STRIP);
+      texture(tex);
+      //shader(shader);
+      for (float x=row1; x<row2; x+=level1_depth)
+      {
+        if((x>1023*zoom)||x<0)
+          continue;
+        else
+        {
+          fill(terrain[(int)x][(int)y]);
+          u = tex.width*x / (rows*zoom) ;
+          v = tex.height*(y+1)/((cols+1)*zoom);
+          //vertex(x, y*2, (map(terrain[(int)x][(int)y], 0, 255, 0, 50)+noise)*zoom);
+          //vertex(x, (y+depth)*2, (map(terrain[(int)x][(int)(y+depth)], 0, 255, 0, 50)+noise)*zoom);
+          //float noise = map(noise(x,y,terrain[(int)x][(int)y]),0,1,-1,1);
+          vertex(x, y*2, (terrain[(int)x][(int)y])*zoom/6,u,v);
+          vertex(x, (y+level1_depth)*2, (terrain[(int)x][(int)(y+level1_depth)])*zoom/6,u,v+level1_depth);
+        }      
+      }
+      endShape();
     }
-    endShape();
   }
 }
 
@@ -318,6 +358,17 @@ void procedural_generation()
 
 void rotate_boundaries()
 {
+  for(int n=0; n<6; n++)
+  {
+    for(int i=0; i<4; i++)
+    {
+      boundary[n][i][0] = cos(camera_direction)*initial_boundary[n][i][0] - sin(camera_direction)*initial_boundary[n][i][1];
+      boundary[n][i][1] = sin(camera_direction)*initial_boundary[n][i][0] + cos(camera_direction)*initial_boundary[n][i][1];
+      print("\n boundry",n, i, "0 = ",  boundary[n][i][0]);
+      print("\n boundry",n, i, "1 = ",  boundary[n][i][1]);
+    }    
+  }
+  
 }
 
 
