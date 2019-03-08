@@ -15,14 +15,14 @@ float camera_direction=0;
 int camera_angle = 100;
 int fardistance = 200;
 int speed = 3;
-float depth= zoom/4;
+float depth= zoom/8;
 float tempx = 0, tempy = 0;
-int view = 50;
+int side_side_view = 35;
 int next = 80;
 float boundary[][][] = {
-                        { {0,256-10}, {0,256+10}, {next,256-view}, {next,256+view} }, 
-                        { {next,256-view}, {next,256+view}, {2*next,256-2*view}, {2*next,256+2*view} },
-                        { {3*next,256-2*view}, {3*next,256+2*view}, {3*next,256-3*view}, {3*next,256+3*view} },
+                        { {0,256-10}, {0,256+10}, {next,256-side_side_view-10}, {next,256+side_side_view+10} }, 
+                        { {next,256-side_side_view}, {next,256+side_side_view}, {2*next,256-2*side_side_view}, {2*next,256+2*side_side_view} },
+                        { {2*next,256-2*side_side_view}, {2*next,256+2*side_side_view}, {3*next,256-3*side_side_view}, {3*next,256+3*side_side_view} },
                        };
 
 
@@ -224,7 +224,7 @@ void movez(float direction)
   }
 }
 
-void display (float row1, float col1, float row2, float col2)
+void display_level3 (float row1, float col1, float row2, float col2)
 {
   float u = 0, v = 0;
   for (float y=col1; y< (col2 - zoom); y+=depth)
@@ -246,14 +246,68 @@ void display (float row1, float col1, float row2, float col2)
     endShape();
   }
 }
-
+void display_level2 (float row1, float col1, float row2, float col2)
+{
+  float level2_depth = depth*2;
+  float u = 0, v = 0;
+  for (float y=col1; y< (col2 - zoom); y+=level2_depth)
+  {
+    beginShape(TRIANGLE_STRIP);
+    texture(tex);
+    //shader(shader);
+    for (float x=row1; x<row2; x+=level2_depth)
+    { 
+      fill(terrain[(int)x][(int)y]);
+      u = tex.width*x / (row2*4) ;
+      v = tex.height*(y+1)/(col2+1);
+      //vertex(x, y*2, (map(terrain[(int)x][(int)y], 0, 255, 0, 50)+noise)*zoom);
+      //vertex(x, (y+depth)*2, (map(terrain[(int)x][(int)(y+depth)], 0, 255, 0, 50)+noise)*zoom);
+      //float noise = map(noise(x,y,terrain[(int)x][(int)y]),0,1,-1,1);
+      vertex(x, y*2, (terrain[(int)x][(int)y])*zoom/6,u,v);
+      vertex(x, (y+level2_depth)*2, (terrain[(int)x][(int)(y+level2_depth)])*zoom/6,u,v+level2_depth);
+    }
+    endShape();
+  }
+}void display_level1 (float row1, float col1, float row2, float col2)
+{
+  float level2_depth = depth*4;
+  float u = 0, v = 0;
+  for (float y=col1; y< (col2 - zoom); y+=level2_depth)
+  {
+    beginShape(TRIANGLE_STRIP);
+    texture(tex);
+    //shader(shader);
+    for (float x=row1; x<row2; x+=level2_depth)
+    { 
+      fill(terrain[(int)x][(int)y]);
+      u = tex.width*x / (row2*4) ;
+      v = tex.height*(y+1)/(col2+1);
+      //vertex(x, y*2, (map(terrain[(int)x][(int)y], 0, 255, 0, 50)+noise)*zoom);
+      //vertex(x, (y+depth)*2, (map(terrain[(int)x][(int)(y+depth)], 0, 255, 0, 50)+noise)*zoom);
+      //float noise = map(noise(x,y,terrain[(int)x][(int)y]),0,1,-1,1);
+      vertex(x, y*2, (terrain[(int)x][(int)y])*zoom/6,u,v);
+      vertex(x, (y+level2_depth)*2, (terrain[(int)x][(int)(y+level2_depth)])*zoom/6,u,v+level2_depth);
+    }
+    endShape();
+  }
+}
 
 void procedural_generation()
 {
   move();
-  display(leftmost(0)*zoom, topmost(0)*zoom, rightmost(0)*zoom, bottommost(0)*zoom);
-  
-  //display(0,(256-view)*zoom,(next)*zoom,(256+view)*zoom);
+  for(int i=0; i<1; i++)
+  {
+    display_level3(leftmost(i)*zoom, topmost(i)*zoom, (rightmost(i)+1)*zoom, (bottommost(i)+1)*zoom);
+  }
+  for(int i=1; i<2; i++)
+  {
+    display_level2(leftmost(i)*zoom, topmost(i)*zoom, (rightmost(i)+1)*zoom, (bottommost(i)+1)*zoom);
+  }
+  for(int i=2; i<3; i++)
+  {
+    display_level1(leftmost(i)*zoom, topmost(i)*zoom, (rightmost(i)+1)*zoom, (bottommost(i)+1)*zoom);
+  }
+  //display(0,(256-side_side_view)*zoom,(next)*zoom,(256+side_side_view)*zoom);
   //display(xx*zoom,cols*zoom*0.25,(xx+fardistance)*zoom,cols*zoom*0.75);
 }
 
@@ -320,12 +374,10 @@ void keyPressed()
     goback = false;
     goleft = false;
   }
-  else if (key == '7' || key == '&')
-    depth = zoom/1;
   else if (key == '8' || key == '*')
-    depth = zoom/2;
-  else if (key == '9' || key == '(')
     depth = zoom/4;
+  else if (key == '9' || key == '(')
+    depth = zoom/8;
   if (key == 'P' || key == 'p')
   { 
     gofront = false;
