@@ -17,12 +17,15 @@ int fardistance = 200;
 int speed = 3;
 float depth= zoom/8;
 float tempx = 0, tempy = 0;
-int side_side_view = 35;
-int next = 80;
+int side_side_view = 20;
+int next = 40;
 float boundary[][][] = {
                         { {0,256-10}, {0,256+10}, {next,256-side_side_view-10}, {next,256+side_side_view+10} }, 
                         { {next,256-side_side_view}, {next,256+side_side_view}, {2*next,256-2*side_side_view}, {2*next,256+2*side_side_view} },
                         { {2*next,256-2*side_side_view}, {2*next,256+2*side_side_view}, {3*next,256-3*side_side_view}, {3*next,256+3*side_side_view} },
+                        { {3*next,256-3*side_side_view}, {3*next,256+3*side_side_view}, {4*next,256-4*side_side_view}, {4*next,256+4*side_side_view} },
+                        { {4*next,256-4*side_side_view}, {4*next,256+4*side_side_view}, {5*next,256-5*side_side_view}, {5*next,256+5*side_side_view} },
+                        { {5*next,256-5*side_side_view}, {5*next,256+5*side_side_view}, {6*next,256-6*side_side_view}, {6*next,256+6*side_side_view} },
                        };
 
 
@@ -295,15 +298,15 @@ void display_level2 (float row1, float col1, float row2, float col2)
 void procedural_generation()
 {
   move();
-  for(int i=0; i<1; i++)
+  for(int i=0; i<2; i++)
   {
     display_level3(leftmost(i)*zoom, topmost(i)*zoom, (rightmost(i)+1)*zoom, (bottommost(i)+1)*zoom);
   }
-  for(int i=1; i<2; i++)
+  for(int i=1; i<4; i++)
   {
     display_level2(leftmost(i)*zoom, topmost(i)*zoom, (rightmost(i)+1)*zoom, (bottommost(i)+1)*zoom);
   }
-  for(int i=2; i<3; i++)
+  for(int i=2; i<6; i++)
   {
     display_level1(leftmost(i)*zoom, topmost(i)*zoom, (rightmost(i)+1)*zoom, (bottommost(i)+1)*zoom);
   }
