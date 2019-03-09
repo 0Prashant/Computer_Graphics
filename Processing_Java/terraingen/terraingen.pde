@@ -2,6 +2,7 @@ import peasy.*;
 int zoom = 8;
 float[][] terrain;
 float [][] noise;
+PShader nebula;
 PeasyCam camera;
 PImage img;
 PImage tex;
@@ -11,6 +12,7 @@ int cols = 512;
 float zz,xx,yy;
 boolean start = false;
 boolean gofront, goback, goright, goleft; 
+boolean animate;
 float camera_direction=0;
 int camera_angle = 100;
 int fardistance = 200;
@@ -68,17 +70,21 @@ void setup()
   terrain = convolute9(rows*zoom, cols*zoom, terrain);
   //terrain = final_noise(terrain);
   smooth(4);
+  //  nebula = loadShader("../nebula.glsl");
+  //nebula.set("resolution", float(width), float(height));
   frameRate(60);
 }
 
 void draw()
 {
   background(0);
+  
+  //nebula.set("time", millis() / 500.0);  
+  //shader(nebula); 
   lightening();
   //perspective(30, 1, 1, 5000);
   initialize_orientation();
   sphere();
-  translate(-200,0,0);
   procedural_generation();
 }
 
@@ -202,11 +208,14 @@ float[][] final_noise(float[][] array)
 void initialize_orientation()
 {  
   translate(rows*zoom/2, cols*zoom/2,0);
-  rotateX(PI/2.5);
+  rotateX(PI/2.7);
   rotateZ(-PI/2);
   rotateZ(-camera_direction);
   translate(-rows*zoom/2, -cols*zoom/2,0);
   translate(rows*zoom/2+22*zoom,-cols*zoom/2,-zoom*30);
+  translate(-200,0,0);
+  //if(terrain[(int)xx][(int)yy+216]<22*zoom)
+  //{}
 }
 
 void movex(float direction)
@@ -249,7 +258,7 @@ void display_level3 (float row1, float col1, float row2, float col2)
     {
       beginShape(TRIANGLE_STRIP);
       texture(tex);
-      //shader(shader);
+      shader(shader);
       for (float x=row1; x<row2; x+=depth)
       {
         if((x>1023*zoom)||x<0)
@@ -353,10 +362,10 @@ void procedural_generation()
   for(int i=4; i<6; i++)
   {
     display_level1((xx+leftmost(i))*zoom, (yy/2+y_offset+topmost(i)/2)*zoom, (xx+rightmost(i)+1)*zoom, (yy/2+y_offset+bottommost(i)/2+1)*zoom);
-    rect((xx+boundary[i][0][0])*zoom, (yy/2+y_offset+boundary[i][0][1])*zoom*2, 20*zoom,20*zoom);
-    rect((xx+boundary[i][1][0])*zoom, (yy/2+y_offset+boundary[i][1][1])*zoom*2, 20*zoom,20*zoom);
-    rect((xx+boundary[i][2][0])*zoom, (yy/2+y_offset+boundary[i][2][1])*zoom*2, 20*zoom,20*zoom);
-    rect((xx+boundary[i][3][0])*zoom, (yy/2+y_offset+boundary[i][3][1])*zoom*2, 20*zoom,20*zoom);
+    //rect((xx+boundary[i][0][0])*zoom, (yy/2+y_offset+boundary[i][0][1])*zoom*2, 20*zoom,20*zoom);
+    //rect((xx+boundary[i][1][0])*zoom, (yy/2+y_offset+boundary[i][1][1])*zoom*2, 20*zoom,20*zoom);
+    //rect((xx+boundary[i][2][0])*zoom, (yy/2+y_offset+boundary[i][2][1])*zoom*2, 20*zoom,20*zoom);
+    //rect((xx+boundary[i][3][0])*zoom, (yy/2+y_offset+boundary[i][3][1])*zoom*2, 20*zoom,20*zoom);
     //rect ((xx+rightmost(i)+1)*zoom, (yy/2+y_offset+bottommost(i)+1)*zoom*2, 20*zoom,20*zoom);
   }
   print((xx+leftmost(5)), "\t", (yy/2+y_offset+topmost(5)), "\t",(xx+rightmost(5)+1), "\t", (yy/2+y_offset+bottommost(5)+1), "\n" );
@@ -446,10 +455,25 @@ void keyPressed()
     goback = false;
     goleft = false;
   }
-  else if (key == '8' || key == '*')
+  
+  else if (key == '1' || key == '!')
+    speed = 1;
+  else if (key == '2' || key == '@')
+    speed = 2;
+  else if (key == '3' || key == '#')
+    speed = 3;
+  else if (key == '4' || key == '$')
+    speed = 4;
+  else if (key == '5' || key == '%')
+    speed = 5;
+  else if (key == '7' || key == '&')
     depth = zoom/4;
+  else if (key == '8' || key == '*')
+    depth = zoom/8;    
   else if (key == '9' || key == '(')
-    depth = zoom/8;
+    depth = zoom/1;
+  else if (key == '0' || key == ')')
+    animate = true;
   if (key == 'P' || key == 'p')
   { 
     depth = zoom/8;
@@ -545,24 +569,3 @@ float bottommost(int n)
     //print (" \n bottommost = ", val);
   return val;
 }
-
-
-
-//void custompan() {
-//        if (cameraposY>300) {
-//                camera(cameraposX,cameraposY,cameraposZ,cameraposX+1,cameraposY,cameraposZ,0,1,0);
-//                //defining the perspective projection parameters
-//                float cameraZ = (height/2.0) / tan(fov/2.0);
-
-//                //projection
-//                perspective(fov, float(width)/float(height), cameraZ/10.0, cameraZ*100.0);
-//                cameraposY-=speed;
-//        }
-//        else {
-//                beginCamera();
-//                translate(w,cameraposY,h/2);
-//                rotateY(-speed/100);
-//                translate(-w,-cameraposY,-h/2);
-//                endCamera();
-//        }
-//}
