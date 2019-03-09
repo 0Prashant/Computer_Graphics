@@ -1,194 +1,244 @@
-//import queasycam.*;
-import peasy.*;
+//import processing.opengl.*;
+//import peasy.*;
+//PeasyCam cam;
 
-PeasyCam cam;
-//QueasyCam camera;
 
-int cols, rows;
+
+int w =2000;
+int h =2000;
 int scl = 20;
-int w = 1600;
-int h = 1600;
-float fill_color;
+int cols,rows;
+float[][] terrain;
+float [][] water;
+int watervol = 2;
+
+//water flows slower on land than in sea
+float flow_on_land;
+float flow_in_sea;
+
+//to store multiple key presses
+boolean[] pressed;
+
+float cameraheight = 650; //works only for w=h=2000
 
 float dynamic = 0;
-float speed;
-float[][] terrain;
-float[][] water;
+  
+float speed = 0.01;  
 
-void setup() {
-  //size(1200, 1200, P3D);
+//constants for island creation
+//a pushes everything up, b pushes edges down, c controls the quickness of dropoff, set a&b to 0 for default
+float a = 0.2;
+float b = 0.6;
+float c = 1;
+void setup(){
+  //camera(w/2,cameraheight,h/2,w/2,cameraheight,h/2,0,1,0);
+  
+  //cam = new PeasyCam(this, w/2, h/2, 1000, 0);
+  //cam.setMaximumDistance(3000);
+
   fullScreen(P3D);
-  smooth(8);
+  smooth(4);
+  cols = w/scl;
+  rows = h/scl;
   
-  cols = w / scl;
-  rows = h / scl;
+  //renderer = (PGraphics3D)g;
+  //dynam alloc memory
   terrain = new float[cols][rows];
-  water = new float[2*cols][2*rows];
-    
-  // generating terrain once
-  //generate_terrain();
+  water = new float [watervol*cols][watervol*rows];
+  pressed = new boolean[256];
   
+  flow_on_land = -speed;
+  flow_in_sea = -speed;
   
-  // camera setup
-  
-  //camera = new QueasyCam(this);
-  //camera.speed = 5;
-  //camera.sensitivity = 0.5;
-  
-  cam = new PeasyCam(this, w/2, h/2, 300, 600);
-  //cam.setMinimumDistance(2);
-  cam.setMaximumDistance(2000);
-  cam.setSuppressRollRotationMode();
-  
-  
-  // set speed
-  speed = 0.01;
 }
 
-void draw() 
-{  
-  // lights
+void draw(){
+  
+  int land_factor = 700;
+  int water_factor = 75;
+  int sea_level = 200;
+  int cliff = 25;
+  
+  custompan();
+  dynamic -=speed;
+  flow_in_sea = dynamic;
+  flow_on_land = dynamic/100;
+  
+  translate(w/2,h/2);
+  rotateX(PI/2);
+  translate(-w/2,-h/2);
+  //float yoff = 0;
+  
   ambientLight(172, 136, 111);
   directionalLight(50, 50, 50, 0, 0, -1);
-  //pointLight(150, 150, 150, w/2, h/2, 100);
-  sphere(30);
-  
-  
-  dynamic -= speed;
-  float yoff_w = dynamic;
-  generate_terrain(dynamic/200);
-  
-  // generating water each draw()
-  for (int y=0; y<2*rows; y++)
+  pointLight(150, 150, 150, w/2, h/2, 100);
+//sphere(30);
+  //land
+  for (int y = 0; y < rows; y++) 
   {
-    float xoff_w = 0;
-    for (int x=0; x<2*cols; x++)
-    {
-      water[x][y] = map(noise(xoff_w, yoff_w), 0, 1, -50, 50);
-      xoff_w += 0.2;
-    }
-    yoff_w += 0.2;
+  for (int x = 0; x < cols; x++) 
+  {      
+    float nx = (float)scl/20*(float)x/12,ny = (float)scl/20*(float)y/12 ;
+    terrain[x][y] = noise(nx+noise(flow_on_land), ny+noise(flow_on_land));
+  }
   }
   
   
+  //water
+  for (int y = 0; y < watervol*rows; y++) 
+  {
+  for (int x = 0; x < watervol*cols; x++) 
+  {      
+    float nx = float(scl)/20*(float)x/5,ny = float(scl)/20*(float)y/5 ;
+    if ((y<cols/2+cliff || y>3*cols/2-cliff) ||(x<rows/2+cliff ||x>3*rows/2-cliff))
+      water[x][y] = noise(nx, ny+flow_in_sea);
+    else
+      water[x][y] = noise(nx, ny+flow_on_land);
+  }
+  //flow_in_sea+=0.2;
+  }
+  background(0);
+  //land
   
-  background(30);
-  stroke(120, 20);
-  //camera(mouseX, mouseY, (height/2) / tan(PI/6), mouseX, mouseY, 0, 0, 1, 0); 
-  //noFill();
-  
-  
-  translate(width/2, height/2+50); //<>//
-  rotateX(PI/3);
-  translate(-w/2, -h/2);
-  
-  
-  // plotting water
-  for (int y=0; y<2*rows-1; y++)
+  for (int y=0; y<rows-1; y++)
   {
     beginShape(TRIANGLE_STRIP);
-    for (int x=0; x<2*cols; x++)
+    for (int x=0;x<cols; x++)
     {
-      //rect(x*scl, y*scl, scl, scl);
-      fill_color = map(water[x][y], -130, 130, 0, 255);
+
+      float dist = sqrt(pow(cols/2-x,2)+pow(rows/2-y,2));
+      //mapping upto sqrt(2) instead of 1 for island illusion
+      float d = map(dist,0,sqrt(cols/2*cols/2+rows/2*rows/2),0,sqrt(2));
+      float dist1 = sqrt(pow(cols/2-x,2)+pow(rows/2-y-1,2));
+      float d1 = map(dist1,0,sqrt(cols/2*cols/2+rows/2*rows/2),0,sqrt(2));
+      float e =(terrain[x][y] + a)*(1 - b*pow(d,c));
+      float e1 =(terrain[x][y+1] + a)* (1- b*pow(d1,c));
+      //fill(125,125,125);
+      //rect(x*scl,y*scl,scl,scl);
+      //land, factor is 500
+      float[] terrain_color = terrain_gradient(map(land_factor*e+cliff, 0, land_factor+cliff, 0, 1));
+  
+      fill(terrain_color[0], terrain_color[1], terrain_color[2], 255);
+      noStroke();
+      //stroke(terrain_color[0], terrain_color[1], terrain_color[2], 255);
+      
+      vertex((x+rows/2)*scl, (y+cols/2)*scl, land_factor*e+cliff);
+      vertex((x+rows/2)*scl, (y+cols/2+1)*scl, land_factor*e1+cliff);
+    }
+    endShape();
+  }
+  
+  //water
+  for (int y=0; y<watervol*rows-1; y++)
+  {
+    beginShape(TRIANGLE_STRIP);
+    for (int x=0;x<watervol*cols; x++)
+    {
       fill(20, 20, 200, 75);
-      vertex((x-cols/2)*scl, (y-rows/2)*scl, water[x][y]);
-      vertex((x-cols/2)*scl, (y+1-rows/2)*scl, water[x][y+1]);
+      noStroke();
+      //stroke(20, 20, 200, 20);
+      //rect(x*scl,y*scl,scl,scl);
+      //land, factor is 500
+      vertex(x*scl, y*scl, water_factor*water[x][y]+sea_level);
+      vertex(x*scl, (y+1)*scl, water_factor*water[x][y+1]+sea_level);
     }
     endShape();
   }
   
-  // plotting land
-  for (int y=rows/5; y<(rows*4/5)-1; y++)
-  {
-    beginShape(TRIANGLE_STRIP);
-    for (int x=cols/5; x<cols*4/5; x++)
-    {
-      float[] terrain_color = terrain_gradient(map(terrain[x][y], -100, 250, 0, 1));
-      //fill(fill_color, fill_color, fill_color);
-      fill(terrain_color[0], terrain_color[1], terrain_color[2], terrain_color[3]);
-      vertex(x*scl, y*scl, terrain[x][y]);
-      vertex(x*scl, (y+1)*scl, terrain[x][y+1]);
-    }
-    endShape();
-  }
 }
 
-float[] terrain_gradient(float height)
+float [] terrain_gradient(float height)
 {
   float[] terrain_color = {255, 255, 255, 255}; // default snow
   // height between 0 to 1
   
-  float[] colorA = {117, 209, 164, 255}; // green
+  float[] colorA = {0, 255, 0, 255}; // green
   float[] colorB = {242, 189, 137, 255}; // brown
-  
-  if (height < 0.7)
+  float[] sand = {224,205,235,255};
+  if (height < 0.7 && height >0.3)
   {
   height /= 0.7;
   for (int i=0; i<3; i++)
   {
     terrain_color[i] = colorA[i] + height*(colorB[i]-colorA[i]);
   }
-  } 
-  if (height < 0.5)
-  {
-    terrain_color[0] = 20;
-    terrain_color[1] = 20;
-    terrain_color[2] = 200;
-    terrain_color[3] = 75;
   }
+  else if (height<0.3)
+  {
+    height /= 0.3;
+  for (int i=0; i<3; i++)
+  {
+    terrain_color[i] = sand[i] + height*(colorB[i]-sand[i]);
+  }
+  } 
   
   return terrain_color;
 }
 
-
-void generate_terrain(float yoff_t)
+void custompan()
 {
-  float min_height = -100;
-  float max_height = 250;
-  float elev;
-  
-  float a = 0.02;
-  float b = 0.44;
-  float c = 4.;
-  
-  //float yoff_t = 0;
-  for (int y=rows/5; y<rows*4/5; y++)
+  //float cameraZ = ((h/2.0)/tan(PI*60/360));
+  if (cameraheight>300)
   {
-    float xoff_t = 0;
-    for (int x=cols/5; x<cols*4/5; x++)
+    camera(w/2,cameraheight,h/2,w/2+1,cameraheight,h/2,0,1,0);
+    //defining the perspective projection parameters
+    float fov = PI/1.8; // use Pi/1.4-Pi/1.6 for fisheye 
+    float cameraZ = (height/2.0) / tan(fov/2.0);
+    //projection
+    perspective(fov, float(width)/float(height), cameraZ/10.0, cameraZ*10.0);
+    
+    
+    /*
+    note: source code for projection(perspective):
+    for later reference, can be modified along with frustum
+    (that has the actual projection matrix)
+    to create other projections*/
+    
+    /*@Override
+    //fov = vertical field of view in degrees
+    public void perspective(float fov, float aspect, float zNear, float zFar) 
     {
-      // added octaves
-      //elev = noise(xoff_t, yoff_t);
-      float e0 = 1 * noise(1 * xoff_t, 1 * yoff_t);
-      float e1 = 0.5 * ridge_noise(2 * xoff_t, 2 * yoff_t);
-      float e2 = 0.25 * ridge_noise(4 * xoff_t, 4 * yoff_t);
-      elev = pow((e0 + e1 + e2)/1.5, 2);
-      float d = 2*max(abs(x-cols/2)/cols, abs(y-rows/2)/rows); // manhattan
-      //float d = 2*sqrt(pow((x - cols/2)/cols, 2) + pow((y - rows/2)/rows, 2)); // euclidean
-
-      elev = (elev + a) * (1 - b*pow(d, c));
-      
-      
-      terrain[x][y] = map(elev, 0, 1, min_height, max_height);
-      
-      xoff_t += 0.2;
-    }
-    yoff_t += 0.2;
-  }  
-}
-
-float ridge_noise(float x, float y)
-{
-  return 2 * (0.5 - abs(0.5 - noise(x, y)));
+    float ymax = zNear * (float) Math.tan(fov / 2);
+    float ymin = -ymax;
+    float xmin = ymin * aspect;
+    float xmax = ymax * aspect;
+    frustum(xmin, xmax, ymin, ymax, zNear, zFar);
+      }
+      /*@Override
+  public void frustum(float left, float right, float bottom, float top,
+                      float znear, float zfar) {
+    // Flushing geometry with a different perspective configuration.
+    flush();
+    cameraFOV = 2 * (float) Math.atan2(top, znear); //atan2(y,x) gives atan(y/x)
+    cameraAspect = left / bottom;
+    cameraNear = znear;
+    cameraFar = zfar;
+    float n2 = 2 * znear;
+    float w = right - left;
+    float h = top - bottom;
+    float d = zfar - znear;
+    projection.set(n2 / w,       0,  (right + left) / w,                0,
+                        0, -n2 / h,  (top + bottom) / h,                0,
+                        0,       0, -(zfar + znear) / d, -(n2 * zfar) / d,
+                        0,       0,                  -1,                0);
+    updateProjmodelview();
+  }*/
+    
+    cameraheight-=speed;
+  }
+  else
+  {
+    beginCamera();
+    translate(w,cameraheight,h/2);
+    rotateY(-speed/100);
+    translate(-w,-cameraheight,-h/2);
+    endCamera();
+  }
 }
 
 void keyPressed()
 {
-  if (key == '1' || key == '!')
-  {
-    speed = 0.01;
-  }
+  pressed[keyCode] = true;
   switch(key)
   {
     case '1':
@@ -223,4 +273,7 @@ void keyPressed()
       speed = 0.01;
       break;
   }
+}
+void keyReleased(){
+  pressed[keyCode] = false;
 }

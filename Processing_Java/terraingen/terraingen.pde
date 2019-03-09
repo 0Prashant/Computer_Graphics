@@ -17,7 +17,7 @@ int fardistance = 200;
 int speed = 2;
 float depth= zoom/8;
 float tempx = 0, tempy = 0;
-int side_side_view = 22;
+int side_side_view = 44;
 int next = 40;
 int y_offset = 256;
 float initial_boundary[][][] = {
@@ -75,6 +75,7 @@ void draw()
 {
   background(0);
   lightening();
+  //perspective(30, 1, 1, 5000);
   initialize_orientation();
   sphere();
   translate(-200,0,0);
@@ -343,17 +344,22 @@ void procedural_generation()
   rotate_boundaries();
   for(int i=0; i<2; i++)
   {
-    display_level3((xx+leftmost(i))*zoom, (yy/2+y_offset+topmost(i))*zoom, (xx+rightmost(i)+1)*zoom, (yy/2+y_offset+bottommost(i)+1)*zoom);
+    display_level3((xx+leftmost(i))*zoom, (yy/2+y_offset+topmost(i)/2)*zoom, (xx+rightmost(i)+1)*zoom, (yy/2+y_offset+bottommost(i)/2+1)*zoom);
   }
-  for(int i=1; i<4; i++)
+  for(int i=2; i<4; i++)
   {
-    display_level2((xx+leftmost(i))*zoom, (yy/2+y_offset+topmost(i))*zoom, (xx+rightmost(i)+1)*zoom, (yy/2+y_offset+bottommost(i)+1)*zoom);
+    display_level2((xx+leftmost(i))*zoom, (yy/2+y_offset+topmost(i)/2)*zoom, (xx+rightmost(i)+1)*zoom, (yy/2+y_offset+bottommost(i)/2+1)*zoom);
   }
-  for(int i=2; i<6; i++)
+  for(int i=4; i<6; i++)
   {
-    display_level1((xx+leftmost(i))*zoom, (yy/2+y_offset+topmost(i))*zoom, (xx+rightmost(i)+1)*zoom, (yy/2+y_offset+bottommost(i)+1)*zoom);
+    display_level1((xx+leftmost(i))*zoom, (yy/2+y_offset+topmost(i)/2)*zoom, (xx+rightmost(i)+1)*zoom, (yy/2+y_offset+bottommost(i)/2+1)*zoom);
+    rect((xx+boundary[i][0][0])*zoom, (yy/2+y_offset+boundary[i][0][1])*zoom*2, 20*zoom,20*zoom);
+    rect((xx+boundary[i][1][0])*zoom, (yy/2+y_offset+boundary[i][1][1])*zoom*2, 20*zoom,20*zoom);
+    rect((xx+boundary[i][2][0])*zoom, (yy/2+y_offset+boundary[i][2][1])*zoom*2, 20*zoom,20*zoom);
+    rect((xx+boundary[i][3][0])*zoom, (yy/2+y_offset+boundary[i][3][1])*zoom*2, 20*zoom,20*zoom);
+    //rect ((xx+rightmost(i)+1)*zoom, (yy/2+y_offset+bottommost(i)+1)*zoom*2, 20*zoom,20*zoom);
   }
-  
+  print((xx+leftmost(5)), "\t", (yy/2+y_offset+topmost(5)), "\t",(xx+rightmost(5)+1), "\t", (yy/2+y_offset+bottommost(5)+1), "\n" );
   //display(0,(256-side_side_view)*zoom,(next)*zoom,(256+side_side_view)*zoom);
   //display(xx*zoom,cols*zoom*0.25,(xx+fardistance)*zoom,cols*zoom*0.75);
 }
@@ -539,3 +545,24 @@ float bottommost(int n)
     //print (" \n bottommost = ", val);
   return val;
 }
+
+
+
+//void custompan() {
+//        if (cameraposY>300) {
+//                camera(cameraposX,cameraposY,cameraposZ,cameraposX+1,cameraposY,cameraposZ,0,1,0);
+//                //defining the perspective projection parameters
+//                float cameraZ = (height/2.0) / tan(fov/2.0);
+
+//                //projection
+//                perspective(fov, float(width)/float(height), cameraZ/10.0, cameraZ*100.0);
+//                cameraposY-=speed;
+//        }
+//        else {
+//                beginCamera();
+//                translate(w,cameraposY,h/2);
+//                rotateY(-speed/100);
+//                translate(-w,-cameraposY,-h/2);
+//                endCamera();
+//        }
+//}
