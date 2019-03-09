@@ -17,7 +17,7 @@ int fardistance = 200;
 int speed = 2;
 float depth= zoom/8;
 float tempx = 0, tempy = 0;
-int side_side_view = 20;
+int side_side_view = 22;
 int next = 40;
 int y_offset = 256;
 float initial_boundary[][][] = {
@@ -178,6 +178,7 @@ float[][] noise_setup(float[][] array)
   }
   return new_matrix;
 }
+
 float[][] final_noise(float[][] array)
 {
   float[][] new_matrix = new float[rows*zoom][cols*zoom];
@@ -204,7 +205,7 @@ void initialize_orientation()
   rotateZ(-PI/2);
   rotateZ(-camera_direction);
   translate(-rows*zoom/2, -cols*zoom/2,0);
-  translate(rows*zoom/2,-cols*zoom/2,-zoom*30);
+  translate(rows*zoom/2+22*zoom,-cols*zoom/2,-zoom*30);
 }
 
 void movex(float direction)
@@ -352,20 +353,24 @@ void procedural_generation()
   {
     display_level1((xx+leftmost(i))*zoom, (yy/2+y_offset+topmost(i))*zoom, (xx+rightmost(i)+1)*zoom, (yy/2+y_offset+bottommost(i)+1)*zoom);
   }
+  
   //display(0,(256-side_side_view)*zoom,(next)*zoom,(256+side_side_view)*zoom);
   //display(xx*zoom,cols*zoom*0.25,(xx+fardistance)*zoom,cols*zoom*0.75);
 }
 
 void rotate_boundaries()
 {
+  int tx =0, ty =0;
   for(int n=0; n<6; n++)
   {
     for(int i=0; i<4; i++)
     {
-      boundary[n][i][0] = cos(camera_direction)*initial_boundary[n][i][0] - sin(camera_direction)*initial_boundary[n][i][1];
-      boundary[n][i][1] = sin(camera_direction)*initial_boundary[n][i][0] + cos(camera_direction)*initial_boundary[n][i][1];
-      print("\n boundry",n, i, "0 = ",  boundary[n][i][0]);
-      print("\n boundry",n, i, "1 = ",  boundary[n][i][1]);
+      boundary[n][i][0] = cos(camera_direction)*(initial_boundary[n][i][0]-tx) - sin(camera_direction)*(initial_boundary[n][i][1]-ty) +tx ;
+      boundary[n][i][1] = sin(camera_direction)*(initial_boundary[n][i][0]-tx) + cos(camera_direction)*(initial_boundary[n][i][1]-ty) +ty ;
+      //boundary[n][i][1] = initial_boundary[n][i][0] + (-initial_boundary[n][i][0]+boundary[n][i][1])/2;
+      //rect(boundary[n][i][0]*zoom, (boundary[n][i][0]+y_offset)*zoom*2, 100,100);
+      //print("\n boundry",n, i, "0 = ",  boundary[n][i][0]);
+      //print("\n boundry",n, i, "1 = ",  boundary[n][i][1]);
     }    
   }
   
