@@ -66,13 +66,12 @@ void setup()
   terrain = convolute9(rows*zoom, cols*zoom, terrain); 
   terrain = convolute9(rows*zoom, cols*zoom, terrain);
   terrain = convolute9(rows*zoom, cols*zoom, terrain); 
-  terrain = convolute9(rows*zoom, cols*zoom, terrain); 
-  terrain = convolute9(rows*zoom, cols*zoom, terrain);
   //terrain = final_noise(terrain);
   smooth(4);
   //  nebula = loadShader("../nebula.glsl");
   //nebula.set("resolution", float(width), float(height));
   frameRate(60);
+  noStroke();
 }
 
 void draw()
@@ -81,11 +80,17 @@ void draw()
   
   //nebula.set("time", millis() / 500.0);  
   //shader(nebula); 
-  lightening();
+  if (animate)
+    lightening();
   //perspective(30, 1, 1, 5000);
   initialize_orientation();
-  sphere();
-  procedural_generation();
+      
+    sphere();
+  if (animate)
+  {    
+    sphere();
+    procedural_generation();
+  }
 }
 
 void import_image()
@@ -122,8 +127,8 @@ void camera_setup()
 
 void lightening()
 {
-  directionalLight(155,155,155, 0, 100, 0);
-  directionalLight(155,155,155,0,500,0);
+  directionalLight(115,115,115, 0, 100, 0);
+  directionalLight(115,115,115,0,500,0);
 }
 
 
@@ -207,13 +212,25 @@ float[][] final_noise(float[][] array)
 }
 void initialize_orientation()
 {  
-  translate(rows*zoom/2, cols*zoom/2,0);
-  rotateX(PI/2.7);
-  rotateZ(-PI/2);
-  rotateZ(-camera_direction);
-  translate(-rows*zoom/2, -cols*zoom/2,0);
-  translate(rows*zoom/2+22*zoom,-cols*zoom/2,-zoom*30);
-  translate(-200,0,0);
+  if(animate)
+  {
+    translate(rows*zoom/2, cols*zoom/2,0);
+    rotateX(PI/2.6);
+    rotateZ(-PI/2);
+    rotateZ(-camera_direction);
+    translate(-rows*zoom/2, -cols*zoom/2,0);
+    translate(rows*zoom/2+22*zoom,-cols*zoom/2,-zoom*33);
+    translate(-200,0,0);
+  }
+  else
+  {
+    depth = zoom;
+    lights();
+    display_level1(0,0,rows*zoom,(cols-5)*zoom);
+    ambientLight(172, 136, 111);
+    //translate(rows*zoom/2+22*zoom,-cols*zoom/2,-zoom*30);
+    translate(-200,0,zoom*100);
+  }
   //if(terrain[(int)xx][(int)yy+216]<22*zoom)
   //{}
 }
@@ -252,7 +269,7 @@ void display_level3 (float row1, float col1, float row2, float col2)
   float u = 0, v = 0;
   for (float y=col1; y< (col2 - zoom); y+=depth)
   {
-    if((y>511*zoom)||y<0)
+    if((y>500*zoom)||y<0)
       continue;
     else
     {
@@ -261,7 +278,7 @@ void display_level3 (float row1, float col1, float row2, float col2)
       shader(shader);
       for (float x=row1; x<row2; x+=depth)
       {
-        if((x>1023*zoom)||x<0)
+        if((x>1012*zoom)||x<0)
           continue;
         else
         {
@@ -285,7 +302,7 @@ void display_level2 (float row1, float col1, float row2, float col2)
   float u = 0, v = 0;
   for (float y=col1; y< (col2 - zoom); y+=level2_depth)
   {
-    if((y>511*zoom)||y<0)
+    if((y>500*zoom)||y<0)
       continue;
     else
     {
@@ -294,7 +311,7 @@ void display_level2 (float row1, float col1, float row2, float col2)
       //shader(shader);
       for (float x=row1; x<row2; x+=level2_depth)
       {
-        if((x>1023*zoom)||x<0)
+        if((x>1012*zoom)||x<0)
           continue;
         else
         {
@@ -319,7 +336,7 @@ void display_level1 (float row1, float col1, float row2, float col2)
   float u = 0, v = 0;
   for (float y=col1; y< (col2 - zoom); y+=level1_depth)
   {
-    if((y>511*zoom)||y<0)
+    if((y>500*zoom)||y<0)
       continue;
     else
     {
@@ -328,7 +345,7 @@ void display_level1 (float row1, float col1, float row2, float col2)
       //shader(shader);
       for (float x=row1; x<row2; x+=level1_depth)
       {
-        if((x>1023*zoom)||x<0)
+        if((x>1010*zoom)||x<0)
           continue;
         else
         {
@@ -351,14 +368,6 @@ void procedural_generation()
 {
   move();
   rotate_boundaries();
-  for(int i=0; i<2; i++)
-  {
-    display_level3((xx+leftmost(i))*zoom, (yy/2+y_offset+topmost(i)/2)*zoom, (xx+rightmost(i)+1)*zoom, (yy/2+y_offset+bottommost(i)/2+1)*zoom);
-  }
-  for(int i=2; i<4; i++)
-  {
-    display_level2((xx+leftmost(i))*zoom, (yy/2+y_offset+topmost(i)/2)*zoom, (xx+rightmost(i)+1)*zoom, (yy/2+y_offset+bottommost(i)/2+1)*zoom);
-  }
   for(int i=4; i<6; i++)
   {
     display_level1((xx+leftmost(i))*zoom, (yy/2+y_offset+topmost(i)/2)*zoom, (xx+rightmost(i)+1)*zoom, (yy/2+y_offset+bottommost(i)/2+1)*zoom);
@@ -368,6 +377,15 @@ void procedural_generation()
     //rect((xx+boundary[i][3][0])*zoom, (yy/2+y_offset+boundary[i][3][1])*zoom*2, 20*zoom,20*zoom);
     //rect ((xx+rightmost(i)+1)*zoom, (yy/2+y_offset+bottommost(i)+1)*zoom*2, 20*zoom,20*zoom);
   }
+  for(int i=2; i<4; i++)
+  {
+    display_level2((xx+leftmost(i))*zoom, (yy/2+y_offset+topmost(i)/2)*zoom, (xx+rightmost(i)+1)*zoom, (yy/2+y_offset+bottommost(i)/2+1)*zoom);
+  }
+  for(int i=0; i<2; i++)
+  {
+    display_level3((xx+leftmost(i))*zoom, (yy/2+y_offset+topmost(i)/2)*zoom, (xx+rightmost(i)+1)*zoom, (yy/2+y_offset+bottommost(i)/2+1)*zoom);
+  }
+
   print((xx+leftmost(5)), "\t", (yy/2+y_offset+topmost(5)), "\t",(xx+rightmost(5)+1), "\t", (yy/2+y_offset+bottommost(5)+1), "\n" );
   //display(0,(256-side_side_view)*zoom,(next)*zoom,(256+side_side_view)*zoom);
   //display(xx*zoom,cols*zoom*0.25,(xx+fardistance)*zoom,cols*zoom*0.75);
@@ -429,6 +447,7 @@ void keyPressed()
   start = true;
   if (key == 'W' || key == 'w')
   {
+    depth = zoom/4;
     gofront = true;
     goback = false;
     goright = false;
@@ -436,6 +455,7 @@ void keyPressed()
   }
   else if (key == 'S' || key == 's')
   {
+    depth = zoom/4;
     goback = true;
     gofront = false;
     goright = false;
@@ -443,6 +463,7 @@ void keyPressed()
   }
   if (key == 'A' || key == 'a')
   {
+    depth = zoom/4;
     goleft = true;
     gofront = false;
     goback = false;
@@ -450,6 +471,7 @@ void keyPressed()
   }
   else if (key == 'D' || key == 'd')
   {
+    depth = zoom/4;
     goright = true;
     gofront = false;
     goback = false;
@@ -471,9 +493,12 @@ void keyPressed()
   else if (key == '8' || key == '*')
     depth = zoom/8;    
   else if (key == '9' || key == '(')
-    depth = zoom/1;
+    depth = zoom*2;
   else if (key == '0' || key == ')')
+  {
+    depth = zoom/4;
     animate = true;
+  }
   if (key == 'P' || key == 'p')
   { 
     depth = zoom/8;
@@ -492,8 +517,6 @@ void sphere() {
   float del_v = wrap.height/total;
   float u = 0;
   float v = 0;
-  background(0);
-  noStroke();
   float r = 200;
   for (int i = 0; i < total+1; i++) {
     float lat = map(i, 0, total, 0, PI);
